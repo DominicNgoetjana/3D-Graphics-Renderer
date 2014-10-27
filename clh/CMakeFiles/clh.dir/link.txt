@@ -1,0 +1,2 @@
+/usr/bin/ar cr libclh.a  CMakeFiles/clh.dir/clh.cpp.o CMakeFiles/clh.dir/timer.cpp.o
+/usr/bin/ranlib libclh.a

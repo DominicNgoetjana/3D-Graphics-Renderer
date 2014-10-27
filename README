@@ -1,0 +1,64 @@
+Requirements:
+-------------
+These are requirements for Ubuntu. In each case, I've listed where to get the software 
+for Ubuntu 12.04. For newer versions of Ubuntu you might not need all the PPAs.
+
+CMake 2.8.7+, Eigen 3.x, make, automake 1.9, pkg-config, doxygen, GLUT, OpenEXR, GDAL:
+
+sudo apt-get install cmake libeigen3-dev make automake1.9 pkg-config doxygen freeglut3-dev libopenexr-dev openexr openexr-viewers exrtools libgdal1-dev libglm-dev
+
+GCC 4.8:
+
+sudo apt-add-repository ppa:ubuntu-toolchain-r/test
+sudo apt-get update
+sudo apt-get install g++-4.8
+
+Boost, at least 1.49 (earlier versions don't play nice with C++11):
+
+sudo apt-add-repository ppa:azat/boost-unofficial
+sudo apt-get update
+sudo apt-get install libboost1.53-all-dev
+
+Qt5:
+
+sudo apt-add-repository ppa:ubuntu-sdk-team/ppa
+sudo apt-get update
+sudo apt-get install qtbase5-dev
+
+ImageMagick:
+
+I couldn't find a PPA for this, and 6.8 is required. I downloaded the source,
+unpacked it, and run ./configure, make, make install.
+
+
+The OpenCL device must support
+- OpenCL 1.1
+- Images, including CL_RGBA with CL_FLOAT
+
+
+Client-side git config
+----------------------
+In the top level of the repository, run the following commands:
+
+git config core.whitespace tab-in-indent
+cp .git/hooks/pre-commit.sample .git/hooks/pre-commit
+
+This will prevent checkins with tab indentation or with trailing whitespace.
+
+
+Compiling
+---------
+Once all the requirements are running, create a subdirectory called build (or
+anything starting with build - you can have multiple build directories), switch
+into it, and run
+
+cmake <options> ..
+
+Some useful options
+-DCMAKE_CXX_COMPILER=g++-4.8          (to force a specific compiler)
+-DCMAKE_BUILD_TYPE=Debug|Release|RelWithDebInfo  (to select build type)
+-DCMAKE_CXX_FLAGS_DEBUG="-DEIGEN_NO_DEBUG" (massively speeds up Eigen code)
+-DCMAKE_CXX_FLAGS_DEBUG="-gdwarf-3"   (helps older versions of GDB interpret debug symbols)
+-DCMAKE_CXX_FLAGS_RELWITHDEBINFO="-O3 -DNDEBUG -g -gdwarf-3" (similar)
+
+Then run make to build. cmake options are sticky.
