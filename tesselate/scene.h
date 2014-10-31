@@ -7,9 +7,7 @@
 #include <vector>
 #include <stdio.h>
 #include <iostream>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include "renderer.h"
+#include "mesh.h"
 
 using namespace std;
 
@@ -21,13 +19,15 @@ struct Edge
 class Scene
 {
 private:
-    std::vector<vpPoint> verts; ///< vertices of the tesselation structure
-    std::vector<Edge> edges;    ///< edges connecting vertices
-    GLfloat * col;              ///< (r,g,b,a) colour
-    float sphererad;            ///< sphere radius in cm
-    float cylrad;               ///< cylinder radius in cm
-    float tesslen;              ///< side length of an individual tesselation element in cm
-    Vector voldiag;             ///< diagonal of scene bounding box in cm
+    std::vector<vpPoint> verts;     ///< vertices of the tesselation structure
+    std::vector<bool> deadverts;    ///< flagging deleted (invalid) vertices
+    std::vector<Edge> edges;        ///< edges connecting vertices
+    std::vector<bool> deadedges;    ///< flagging deleted (invalid) edges
+    GLfloat * col;                  ///< (r,g,b,a) colour
+    float sphererad;                ///< sphere radius in cm
+    float cylrad;                   ///< cylinder radius in cm
+    float tesslen;                  ///< side length of an individual tesselation element in cm
+    Vector voldiag;                 ///< diagonal of scene bounding box in cm
 
     /**
      * Search list of vertices to find matching point
@@ -132,6 +132,18 @@ public:
      * @param cubelen   length of a cube within the volume, any cubes spilling outside are culled
      */
     void packCubes(vpPoint origin, Vector extent, float cubelen);
+
+    /**
+     * Pack a mesh object with cubes using the volume and cube length parameters of the scene
+     * @param mesh      only cube centers falling within this mesh are allowed
+     */
+    void packCubesInMesh(Mesh * mesh);
+
+    /**
+     * Remove vertices falling outside the provided mesh model
+     * @param mesh  intersecting mesh
+     */
+    void intersectMesh(Mesh * mesh);
 
     /**
      * Test that there are no duplicate vertices or edges in the scene

@@ -126,6 +126,22 @@ void ShapeGeometry::genSphere(float radius, int slices, int stacks, glm::mat4x4 
     }
 }
 
+void ShapeGeometry::genMesh(std::vector<vpPoint> * points, std::vector<Vector> * norms, std::vector<int> * faces)
+{
+    int v, f;
+
+    for(v = 0; v < (int) points->size(); v++)
+    {
+        verts.push_back((* points)[v].x); verts.push_back((* points)[v].y); verts.push_back((* points)[v].z); // position
+        verts.push_back(0.0f); verts.push_back(0.0f); // texture coordinates
+        verts.push_back((* norms)[v].i); verts.push_back((* norms)[v].j); verts.push_back((* norms)[v].k); // normal
+    }
+
+    for(f = 0; f < (int) faces->size(); f++)
+    {
+        indices.push_back((* faces)[f]);
+    }
+}
 
 ShapeDrawData ShapeGeometry::getDrawParameters()
 {

@@ -133,9 +133,13 @@ void GLWidget::paintGL()
 
     if(updateGeometry)
     {
+        scene.packCubesInMesh(&xsect);
         drawParams.clear();
         if(scene.genGeometry(getView(), sdd))
             drawParams.push_back(sdd);
+
+        //if(xsect.genGeometry(getView(), sdd))
+        //    drawParams.push_back(sdd);
         updateGeometry = false;
     }
 

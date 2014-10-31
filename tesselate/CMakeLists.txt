@@ -10,6 +10,7 @@ if (BUILD_GUI)
        vecpnt.cpp
        view.cpp
        voxels.cpp
+       mesh.cpp
        scene.cpp
        window.cpp
        shaderProgram.cpp

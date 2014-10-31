@@ -9,6 +9,8 @@
 #include <iostream>
 #include <limits>
 #include <stack>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/rotate_vector.hpp>
 
 using namespace std;
@@ -72,7 +74,9 @@ Scene::~Scene()
 void Scene::clear()
 {
     verts.clear();
+    deadverts.clear();
     edges.clear();
+    deadedges.clear();
     geom.clear();
 }
 
@@ -92,40 +96,46 @@ bool Scene::genGeometry(View * view, ShapeDrawData &sdd)
     // place a sphere at every vertex
     for(i = 0; i < (int) verts.size(); i++)
     {
-        trs = glm::vec3(verts[i].x, verts[i].y, verts[i].z);
-        tfm = glm::translate(idt, trs);
-        geom.genSphere(sphererad, 30, 30, tfm);
+        if(!deadverts[i])
+        {
+            trs = glm::vec3(verts[i].x, verts[i].y, verts[i].z);
+            tfm = glm::translate(idt, trs);
+            geom.genSphere(sphererad, 30, 30, tfm);
+        }
     }
 
     // place a cylinder along every edge
     for(i = 0; i < (int) edges.size(); i++)
     {
-        edgevec.diff(verts[edges[i].v[0]], verts[edges[i].v[1]]);
-        edgelen = edgevec.length();
-        edgevec.normalize();
+        if(!deadedges[i])
+        {
+            edgevec.diff(verts[edges[i].v[0]], verts[edges[i].v[1]]);
+            edgelen = edgevec.length();
+            edgevec.normalize();
 
-        // translate to starting vertex
-        trs = glm::vec3(verts[edges[i].v[0]].x, verts[edges[i].v[0]].y, verts[edges[i].v[0]].z);
-        tfm = glm::translate(idt, trs);
+            // translate to starting vertex
+            trs = glm::vec3(verts[edges[i].v[0]].x, verts[edges[i].v[0]].y, verts[edges[i].v[0]].z);
+            tfm = glm::translate(idt, trs);
 
-        // azimuth rotation
-        // project to x-z plane
-        azvec = Vector(edgevec.i, 0.0f, edgevec.k);
-        azvec.normalize();
-        azval = atan2(azvec.i, azvec.k) * RAD2DEG;
-        rot = glm::vec3(0.0f, 1.0f, 0.0f);
-        tfm = glm::rotate(tfm, azval, rot);
+            // azimuth rotation
+            // project to x-z plane
+            azvec = Vector(edgevec.i, 0.0f, edgevec.k);
+            azvec.normalize();
+            azval = atan2(azvec.i, azvec.k) * RAD2DEG;
+            rot = glm::vec3(0.0f, 1.0f, 0.0f);
+            tfm = glm::rotate(tfm, azval, rot);
 
-        // elevation rotation
-        // project to x-y plane
-        elvec = Vector(0.0f, edgevec.j, edgevec.k);
-        elvec.normalize();
-        elval = atan2(elvec.j, elvec.k) * RAD2DEG;;
-        rot = glm::vec3(-1.0f, 0.0f, 0.0f);
-        tfm = glm::rotate(tfm, elval, rot);
+            // elevation rotation
+            // project to x-y plane
+            elvec = Vector(0.0f, edgevec.j, edgevec.k);
+            elvec.normalize();
+            elval = atan2(elvec.j, elvec.k) * RAD2DEG;;
+            rot = glm::vec3(-1.0f, 0.0f, 0.0f);
+            tfm = glm::rotate(tfm, elval, rot);
 
-        // align to edge vector by rotation
-        geom.genCylinder(cylrad, edgelen, 30, 5, tfm);
+            // align to edge vector by rotation
+            geom.genCylinder(cylrad, edgelen, 30, 5, tfm);
+        }
     }
 
     // bind geometry to buffers and return drawing parameters, if possible
@@ -163,35 +173,72 @@ bool Scene::addCube(vpPoint origin, float len)
                 {
                     vidx[i] = (int) verts.size();
                     verts.push_back(pnt);
+                    deadverts.push_back(false);
                 }
                 i++;
             }
 
     // create edges of cube using vertex indices
     e.v[0] = vidx[0]; e.v[1] = vidx[1]; // left face
-    if(!findEdge(e, eidx)) edges.push_back(e);
+    if(!findEdge(e, eidx))
+    {
+        edges.push_back(e); deadedges.push_back(false);
+    }
     e.v[0] = vidx[0]; e.v[1] = vidx[2];
-    if(!findEdge(e, eidx)) edges.push_back(e);
+    if(!findEdge(e, eidx))
+    {
+        edges.push_back(e); deadedges.push_back(false);
+    }
     e.v[0] = vidx[1]; e.v[1] = vidx[3];
-    if(!findEdge(e, eidx)) edges.push_back(e);
+    if(!findEdge(e, eidx))
+    {
+        edges.push_back(e); deadedges.push_back(false);
+    }
     e.v[0] = vidx[2]; e.v[1] = vidx[3];
-    if(!findEdge(e, eidx)) edges.push_back(e);
+    if(!findEdge(e, eidx))
+    {
+        edges.push_back(e); deadedges.push_back(false);
+    }
     e.v[0] = vidx[4]; e.v[1] = vidx[5]; // right face
-    if(!findEdge(e, eidx)) edges.push_back(e);
+    if(!findEdge(e, eidx))
+    {
+        edges.push_back(e); deadedges.push_back(false);
+    }
     e.v[0] = vidx[4]; e.v[1] = vidx[6];
-    if(!findEdge(e, eidx)) edges.push_back(e);
+    if(!findEdge(e, eidx))
+    {
+        edges.push_back(e); deadedges.push_back(false);
+    }
     e.v[0] = vidx[5]; e.v[1] = vidx[7];
-    if(!findEdge(e, eidx)) edges.push_back(e);
+    if(!findEdge(e, eidx))
+    {
+        edges.push_back(e); deadedges.push_back(false);
+    }
     e.v[0] = vidx[6]; e.v[1] = vidx[7];
-    if(!findEdge(e, eidx)) edges.push_back(e);
+    if(!findEdge(e, eidx))
+    {
+        edges.push_back(e); deadedges.push_back(false);
+    }
     e.v[0] = vidx[0]; e.v[1] = vidx[4]; // front face
-    if(!findEdge(e, eidx)) edges.push_back(e);
+    if(!findEdge(e, eidx))
+    {
+        edges.push_back(e); deadedges.push_back(false);
+    }
     e.v[0] = vidx[2]; e.v[1] = vidx[6];
-    if(!findEdge(e, eidx)) edges.push_back(e);
+    if(!findEdge(e, eidx))
+    {
+        edges.push_back(e); deadedges.push_back(false);
+    }
     e.v[0] = vidx[1]; e.v[1] = vidx[5]; // back face
-    if(!findEdge(e, eidx)) edges.push_back(e);
+    if(!findEdge(e, eidx))
+    {
+        edges.push_back(e); deadedges.push_back(false);
+    }
     e.v[0] = vidx[3]; e.v[1] = vidx[7];
-    if(!findEdge(e, eidx)) edges.push_back(e);
+    if(!findEdge(e, eidx))
+    {
+        edges.push_back(e); deadedges.push_back(false);
+    }
 
     return snapon;
 }
@@ -224,6 +271,71 @@ void Scene::packCubes(vpPoint origin, Vector extent, float cubelen)
                     if(!snap)
                         cerr << "Error Scene::packCubes: cubes not correctly snapped together." << endl;
             }
+}
+
+void Scene::packCubesInMesh(Mesh * mesh)
+{
+    int numx, numy, numz; // number of cubes in each direction
+    int x, y, z;
+    vpPoint o, c;
+    bool snap;
+    vpPoint origin = vpPoint(-voldiag.i/2.0f, -voldiag.j/2.0f, -voldiag.k/2.0f);
+    Vector extent = voldiag;
+    float cubelen = tesslen;
+    float halflen = 0.5f * cubelen;
+
+    if(!(extent.i > 0.0f && extent.j > 0.0f && extent.k > 0.0f))
+    {
+        cerr << "Error Scene::packCubes: expect a positive extent vector as input." << endl;
+    }
+
+    clear();
+
+    // number of cubes in dimension
+    numx = (int) (extent.i / cubelen);
+    numy = (int) (extent.j / cubelen);
+    numz = (int) (extent.k / cubelen);
+    for(x = 0; x < numx; x++)
+        for(y = 0; y < numy; y++)
+            for(z = 0; z < numz; z++)
+            {
+                o = vpPoint(origin.x + (float) x * cubelen, origin.y + (float) y * cubelen, origin.z + (float) z * cubelen);
+                c = vpPoint(o.x + halflen, o.y + halflen, o.z + halflen); // cube center
+                if(mesh->containedPoint(c)) // only include if center falls inside mesh
+                    snap = addCube(o, cubelen);
+            }
+}
+
+void Scene::intersectMesh(Mesh * mesh)
+{
+    int v, e;
+    int deadcount = 0;
+
+    // reset previous intersection
+    for(v = 0; v < (int) verts.size(); v++)
+        deadverts[v] = false;
+
+    for(e = 0; e < (int) edges.size(); e++)
+        deadedges[e] = false;
+
+    // use deadverts and deadedges to avoid actual deletion of verts and edges and the re-indexing that would be required
+    for(v = 0; v < (int) verts.size(); v++)
+    {
+        if(!deadverts[v])
+            if(!mesh->containedPoint(verts[v])) // outside mesh so delete
+            {
+                deadverts[v] = true;
+                deadcount++;
+            }
+    }
+    // cerr << "Culled " << deadcount << " of " << (int) verts.size() << " vertices" << endl;
+
+    // mark all edges with a dead vertex as dead
+    for(e = 0; e < (int) edges.size(); e++)
+    {
+        if(deadverts[edges[e].v[0]] || deadverts[edges[e].v[1]])
+            deadedges[e] = true;
+    }
 }
 
 bool Scene::duplicateValidity()

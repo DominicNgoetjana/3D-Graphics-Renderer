@@ -83,6 +83,14 @@ public:
     void genSphere(float radius, int slices, int stacks, glm::mat4x4 trm);
 
     /**
+     * Convert a mesh structure to openGL geometry
+     * @param points    list of vertices
+     * @param norms     list of vertex normals
+     * @param faces     flattened list of vertex indices, with each group of 3 indices representing a triangle
+     */
+    void genMesh(std::vector<vpPoint> * points, std::vector<Vector> * norms, std::vector<int> * faces);
+
+    /**
      * Return data required for a draw call, such as the VAO, colour, etc.
      */
     ShapeDrawData getDrawParameters();

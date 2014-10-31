@@ -72,6 +72,7 @@ private:
 
     // scene control
     Scene scene;
+    Mesh xsect;                         ///< intersection mesh
     View view;
     vector<ShapeDrawData> drawParams;
     bool updateGeometry;
