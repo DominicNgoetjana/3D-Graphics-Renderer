@@ -278,7 +278,6 @@ void Scene::packCubesInMesh(Mesh * mesh)
     int numx, numy, numz; // number of cubes in each direction
     int x, y, z;
     vpPoint o, c;
-    bool snap;
     vpPoint origin = vpPoint(-voldiag.i/2.0f, -voldiag.j/2.0f, -voldiag.k/2.0f);
     Vector extent = voldiag;
     float cubelen = tesslen;
@@ -302,7 +301,7 @@ void Scene::packCubesInMesh(Mesh * mesh)
                 o = vpPoint(origin.x + (float) x * cubelen, origin.y + (float) y * cubelen, origin.z + (float) z * cubelen);
                 c = vpPoint(o.x + halflen, o.y + halflen, o.z + halflen); // cube center
                 if(mesh->containedPoint(c)) // only include if center falls inside mesh
-                    snap = addCube(o, cubelen);
+                    addCube(o, cubelen);
             }
 }
 

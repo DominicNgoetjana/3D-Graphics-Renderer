@@ -138,6 +138,10 @@ Window::Window()
     volGroup->setLayout(volLayout);
     paramLayout->addWidget(volGroup);
 
+    // button for intersecting mesh with scene
+    QPushButton *xsectButton = new QPushButton(tr("Intersect"));
+    paramLayout->addWidget(xsectButton);
+
     // button for generating a 3d print - not connected yet
     QPushButton *genButton = new QPushButton(tr("Generate"));
     paramLayout->addWidget(genButton);
@@ -150,6 +154,7 @@ Window::Window()
     connect(widthEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
     connect(hghtEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
     connect(sideEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(xsectButton, &QPushButton::clicked, this, &Window::xsectPress);
 
     paramPanel->setLayout(paramLayout);
     mainLayout->addWidget(perspectiveView, 0, 1);
@@ -185,6 +190,91 @@ void Window::mouseMoveEvent(QMouseEvent *event)
 void Window::repaintAllGL()
 {
     perspectiveView->repaint();
+}
+
+void Window::newFile()
+{
+    // clear everything and reset
+    // this does not reset the volume parameters
+    perspectiveView->getXSect()->clear();
+    perspectiveView->setMeshVisible(false);
+    perspectiveView->setGeometryUpdate(true);
+}
+
+void Window::open()
+{
+    QFileDialog::Options options;
+    QString selectedFilter;
+    QImage cap;
+
+    QString fileName = QFileDialog::getOpenFileName(this,
+                                                    tr("Open Intersection File"),
+                                                    "~/",
+                                                    tr("STL Files (*.stl)"),
+                                                    &selectedFilter,
+                                                    options);
+    if (!fileName.isEmpty())
+    {
+        std::string infile = fileName.toUtf8().constData();
+
+        // use file extension to determine action
+        if(endsWith(infile, ".stl"))
+        {
+            perspectiveView->getXSect()->readSTL(infile);
+            perspectiveView->getXSect()->boxFit(10.0f);
+            perspectiveView->setMeshVisible(true);
+            repaintAllGL();
+        }
+        else
+        {
+            cerr << "Error Window::open: attempt to open unrecognized file format" << endl;
+        }
+    }
+}
+
+void Window::saveFile()
+{
+    if(!tessfilename.isEmpty()) // save directly if we already have a file name
+    {
+        std::string outfile = tessfilename.toUtf8().constData();
+        if(!endsWith(outfile, ".stl"))
+            outfile = outfile + ".stl";
+        // TO DO
+        // perspectiveView->saveScene(outfile);
+    }
+    else
+    {
+        saveAs();
+    }
+}
+
+void Window::saveAs()
+{
+    QFileDialog::Options options;
+    QString selectedFilter;
+    tessfilename = QFileDialog::getSaveFileName(this,
+                                                tr("Save Tesselation"),
+                                                "~/",
+                                                tr("STL File (*.stl)"),
+                                                &selectedFilter,
+                                                options);
+    if (!tessfilename.isEmpty())
+    {
+        std::string outfile = tessfilename.toUtf8().constData();
+        if(!endsWith(outfile, ".stl"))
+            outfile = outfile + ".stl";
+        // TO DO
+        // perspectiveView->saveScene(outfile);
+    }
+}
+
+void Window::xsectPress()
+{
+    if(!perspectiveView->getXSect()->empty())
+        perspectiveView->intersect();
+    else // error message
+        cerr << "Error Window::xsectPress: must load a shape to intersect against first." << endl;
+
 }
 
 void Window::showParamOptions()
@@ -263,6 +353,25 @@ void Window::lineEditChange()
 
 void Window::createActions()
 {
+    newAct = new QAction(tr("&New"), this);
+    newAct->setShortcuts(QKeySequence::New);
+    newAct->setStatusTip(tr("Create a new file"));
+    connect(newAct, SIGNAL(triggered()), this, SLOT(newFile()));
+
+    openAct = new QAction(tr("&Open"), this);
+    openAct->setShortcuts(QKeySequence::Open);
+    openAct->setStatusTip(tr("Open an existing file"));
+    connect(openAct, SIGNAL(triggered()), this, SLOT(open()));
+
+    saveAct = new QAction(tr("&Save"), this);
+    saveAct->setShortcuts(QKeySequence::Save);
+    saveAct->setStatusTip(tr("Save a file"));
+    connect(saveAct, SIGNAL(triggered()), this, SLOT(saveFile()));
+
+    saveAsAct = new QAction(tr("Save as"), this);
+    saveAsAct->setStatusTip(tr("Save a file under name"));
+    connect(saveAsAct, SIGNAL(triggered()), this, SLOT(saveAs()));
+
     showParamAct = new QAction(tr("Show Parameters"), this);
     showParamAct->setCheckable(true);
     showParamAct->setChecked(false);
@@ -273,6 +382,10 @@ void Window::createActions()
 void Window::createMenus()
 {
     fileMenu = menuBar()->addMenu(tr("&File"));
+    fileMenu->addAction(newAct);
+    fileMenu->addAction(openAct);
+    fileMenu->addAction(saveAct);
+    fileMenu->addAction(saveAsAct);
     viewMenu = menuBar()->addMenu(tr("&View"));
     viewMenu->addAction(showParamAct);
 }

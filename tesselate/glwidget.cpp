@@ -44,6 +44,7 @@ GLWidget::GLWidget(const QGLFormat& format, QWidget *parent)
     viewing = false;
     glewSetupDone = false;
     updateGeometry = true;
+    meshVisible = false;
 
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
@@ -133,13 +134,15 @@ void GLWidget::paintGL()
 
     if(updateGeometry)
     {
-        scene.packCubesInMesh(&xsect);
         drawParams.clear();
         if(scene.genGeometry(getView(), sdd))
             drawParams.push_back(sdd);
 
-        //if(xsect.genGeometry(getView(), sdd))
-        //    drawParams.push_back(sdd);
+        if(meshVisible)
+        {
+            if(xsect.genGeometry(getView(), sdd))
+                drawParams.push_back(sdd);
+        }
         updateGeometry = false;
     }
 

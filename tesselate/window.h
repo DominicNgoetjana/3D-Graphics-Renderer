@@ -73,6 +73,21 @@ public slots:
     /// force re-rendering of scene
     void repaintAllGL();
 
+    /// new file menu item
+    void newFile();
+
+    /// open intersection file menu item
+    void open();
+
+    /// save tesselation file menu item
+    void saveFile();
+
+    /// save tesselation file under user-inputted name
+    void saveAs();
+
+    /// intersect mesh and scene
+    void xsectPress();
+
     /// make parameter panel visible
     void showParamOptions();
 
@@ -93,8 +108,14 @@ private:
 
     // menu widgets and actions
     QMenu *fileMenu;
+    QAction *newAct;
+    QAction *openAct;
+    QAction *saveAct;
+    QAction *saveAsAct;
     QMenu *viewMenu;
     QAction *showParamAct;
+
+    QString tessfilename; ///< name of tesselation file for output
 
     /// init menu
     void createActions();

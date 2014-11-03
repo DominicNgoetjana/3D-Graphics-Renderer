@@ -37,12 +37,6 @@ private:
     /// Generate vertex normals by averaging normals of the surrounding faces
     void deriveVertNorms();
 
-    /**
-     * Scale geometry to fit bounding cube centered at origin
-     * @param sidelen   length of one side of the bounding cube
-     */
-    void boxFit(float sidelen);
-
 public:
 
     ShapeGeometry geom;         ///< renderable version of mesh
@@ -53,6 +47,9 @@ public:
 
     /// Remove all vertices and triangles, resetting the structure
     void clear();
+
+    /// Test whether mesh is empty of any geometry (true if empty, false otherwise)
+    bool empty(){ return verts.empty(); }
 
     /**
      * Generate triangle mesh geometry for OpenGL rendering
@@ -70,6 +67,12 @@ public:
      * @retval @c false otherwise
      */
     bool containedPoint(vpPoint pnt);
+
+    /**
+     * Scale geometry to fit bounding cube centered at origin
+     * @param sidelen   length of one side of the bounding cube
+     */
+    void boxFit(float sidelen);
 
     /**
      * Read in triangle mesh from STL format binary file

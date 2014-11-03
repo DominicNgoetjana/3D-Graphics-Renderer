@@ -45,8 +45,17 @@ public:
     /// getter for scene geometry
     Scene * getScene(){ return &scene; }
 
+    /// getter for intersection shape
+    Mesh * getXSect(){ return &xsect; }
+
     /// setter for geometry updating
     void setGeometryUpdate(bool update){ updateGeometry = update; }
+
+    /// setter for drawing intersection mesh
+    void setMeshVisible(bool vis){ meshVisible = vis; setGeometryUpdate(true); }
+
+    /// interesect mesh with scene
+    void intersect(){  scene.packCubesInMesh(&xsect); setMeshVisible(false); repaint(); }
 
     /// Respond to key press events
     void keyPressEvent(QKeyEvent *event);
@@ -71,11 +80,12 @@ protected:
 private:
 
     // scene control
-    Scene scene;
+    Scene scene;                        ///< tesselation mesh
     Mesh xsect;                         ///< intersection mesh
     View view;
     vector<ShapeDrawData> drawParams;
-    bool updateGeometry;
+    bool updateGeometry;                ///< recreate render buffers on change
+    bool meshVisible;                   ///< render intersection mesh
 
     // render variables
     Renderer * renderer;
