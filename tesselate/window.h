@@ -104,7 +104,7 @@ private:
     QWidget * paramPanel;       ///< side panel for user access to parameters
 
     // param panel sub components
-    QLineEdit * radSphereEdit, * radCylEdit, * lenEdit, * widthEdit, * hghtEdit, * sideEdit; ///< text entry fields for parameters
+    QLineEdit * radSphereEdit, * radCylEdit, * lenEdit, * widthEdit, * hghtEdit, * sideEdit, * scfEdit, * txEdit, * tyEdit, * tzEdit, * rxEdit, * ryEdit, * rzEdit; ///< text entry fields for parameters
 
     // menu widgets and actions
     QMenu *fileMenu;

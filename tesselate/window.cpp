@@ -138,6 +138,53 @@ Window::Window()
     volGroup->setLayout(volLayout);
     paramLayout->addWidget(volGroup);
 
+    // volume settings
+    QGroupBox *meshGroup = new QGroupBox(tr("Mesh Settings"));
+    QLabel *scfLabel = new QLabel(tr("Scale:"));
+    scfEdit = new QLineEdit;
+    scfEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, scfEdit));
+    QLabel *trsLabel = new QLabel(tr("Translation:"));
+    txEdit = new QLineEdit;
+    txEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, txEdit));
+    tyEdit = new QLineEdit;
+    tyEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, tyEdit));
+    tzEdit = new QLineEdit;
+    tzEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, tzEdit));
+    QLabel *rotLabel = new QLabel(tr("Rotation:"));
+    rxEdit = new QLineEdit;
+    rxEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, rxEdit));
+    ryEdit = new QLineEdit;
+    ryEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, ryEdit));
+    rzEdit = new QLineEdit;
+    rzEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, rzEdit));
+
+    // set initial mesh values in panel
+    scfEdit->setText(QString::number(perspectiveView->getXSect()->getScale(), 'g', 2));
+    Vector trs = perspectiveView->getXSect()->getTranslation();
+    txEdit->setText(QString::number(trs.i, 'g', 2));
+    tyEdit->setText(QString::number(trs.j, 'g', 2));
+    tzEdit->setText(QString::number(trs.k, 'g', 2));
+    float ax, ay, az;
+    perspectiveView->getXSect()->getRotations(ax, ay, az);
+    rxEdit->setText(QString::number(ax, 'g', 2));
+    ryEdit->setText(QString::number(ay, 'g', 2));
+    rzEdit->setText(QString::number(ay, 'g', 2));
+
+    QGridLayout *meshLayout = new QGridLayout;
+    meshLayout->addWidget(scfLabel, 0, 0);
+    meshLayout->addWidget(scfEdit, 0, 1);
+    meshLayout->addWidget(trsLabel, 1, 0);
+    meshLayout->addWidget(txEdit, 1, 1);
+    meshLayout->addWidget(tyEdit, 1, 2);
+    meshLayout->addWidget(tzEdit, 1, 3);
+    meshLayout->addWidget(rotLabel, 2, 0);
+    meshLayout->addWidget(rxEdit, 2, 1);
+    meshLayout->addWidget(ryEdit, 2, 2);
+    meshLayout->addWidget(rzEdit, 2, 3);
+
+    meshGroup->setLayout(meshLayout);
+    paramLayout->addWidget(meshGroup);
+
     // button for intersecting mesh with scene
     QPushButton *xsectButton = new QPushButton(tr("Intersect"));
     paramLayout->addWidget(xsectButton);
@@ -154,6 +201,13 @@ Window::Window()
     connect(widthEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
     connect(hghtEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
     connect(sideEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(scfEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(txEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(tyEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(tzEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(rxEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(ryEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(rzEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
     connect(xsectButton, &QPushButton::clicked, this, &Window::xsectPress);
 
     paramPanel->setLayout(paramLayout);
@@ -345,6 +399,84 @@ void Window::lineEditChange()
         {
             perspectiveView->getScene()->setTessLength(val);
             perspectiveView->setGeometryUpdate(true);
+        }
+    }
+    if(sender() == scfEdit) // tesselation element side length
+    {
+        val = scfEdit->text().toFloat(&ok);
+        if(ok)
+        {
+            perspectiveView->getXSect()->setScale(val);
+            perspectiveView->setMeshVisible(true);
+        }
+    }
+    if(sender() == txEdit) // tesselation element side length
+    {
+        val = txEdit->text().toFloat(&ok);
+        if(ok)
+        {
+            Vector trs = perspectiveView->getXSect()->getTranslation();
+            trs.i = val;
+            perspectiveView->getXSect()->setTranslation(trs);
+            perspectiveView->setMeshVisible(true);
+        }
+    }
+    if(sender() == tyEdit) // tesselation element side length
+    {
+        val = tyEdit->text().toFloat(&ok);
+        if(ok)
+        {
+            Vector trs = perspectiveView->getXSect()->getTranslation();
+            trs.j = val;
+            perspectiveView->getXSect()->setTranslation(trs);
+            perspectiveView->setMeshVisible(true);
+        }
+    }
+    if(sender() == tzEdit) // tesselation element side length
+    {
+        val = tzEdit->text().toFloat(&ok);
+        if(ok)
+        {
+            Vector trs = perspectiveView->getXSect()->getTranslation();
+            trs.k = val;
+            perspectiveView->getXSect()->setTranslation(trs);
+            perspectiveView->setMeshVisible(true);
+        }
+    }
+    if(sender() == rxEdit) // tesselation element side length
+    {
+        val = rxEdit->text().toFloat(&ok);
+        if(ok)
+        {
+            float ax, ay, az;
+            perspectiveView->getXSect()->getRotations(ax, ay, az);
+            ax = val;
+            perspectiveView->getXSect()->setRotations(ax, ay, az);
+            perspectiveView->setMeshVisible(true);
+        }
+    }
+    if(sender() == ryEdit) // tesselation element side length
+    {
+        val = ryEdit->text().toFloat(&ok);
+        if(ok)
+        {
+            float ax, ay, az;
+            perspectiveView->getXSect()->getRotations(ax, ay, az);
+            ay = val;
+            perspectiveView->getXSect()->setRotations(ax, ay, az);
+            perspectiveView->setMeshVisible(true);
+        }
+    }
+    if(sender() == rzEdit) // tesselation element side length
+    {
+        val = rzEdit->text().toFloat(&ok);
+        if(ok)
+        {
+            float ax, ay, az;
+            perspectiveView->getXSect()->getRotations(ax, ay, az);
+            az = val;
+            perspectiveView->getXSect()->setRotations(ax, ay, az);
+            perspectiveView->setMeshVisible(true);
         }
     }
 

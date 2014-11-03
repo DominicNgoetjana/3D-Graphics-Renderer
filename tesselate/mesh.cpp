@@ -72,6 +72,124 @@ void Mesh::deriveVertNorms()
     }
 }
 
+void Mesh::buildTransform(glm::mat4x4 &tfm)
+{
+    glm::mat4x4 idt;
+
+    idt = glm::mat4(1.0f);
+    tfm = glm::translate(idt, glm::vec3(trx.i, trx.j, trx.k));
+    tfm = glm::rotate(tfm, zrot, glm::vec3(0.0f, 0.0f, 1.0f));
+    tfm = glm::rotate(tfm, yrot, glm::vec3(0.0f, 1.0f, 0.0f));
+    tfm = glm::rotate(tfm, xrot, glm::vec3(1.0f, 0.0f, 0.0f));
+    tfm = glm::scale(tfm, glm::vec3(scale));
+}
+
+Mesh::Mesh()
+{
+    col = stdCol;
+    scale = 1.0f;
+    xrot = yrot = zrot = 0.0f;
+    trx = Vector(0.0f, 0.0f, 0.0f);
+}
+
+Mesh::~Mesh()
+{
+    clear();
+}
+
+void Mesh::clear()
+{
+    verts.clear();
+    tris.clear();
+    geom.clear();
+    col = stdCol;
+    scale = 1.0f;
+    xrot = yrot = zrot = 0.0f;
+    trx = Vector(0.0f, 0.0f, 0.0f);
+}
+
+bool Mesh::genGeometry(View * view, ShapeDrawData &sdd)
+{
+    vector<int> faces;
+    int t, p;
+    glm::mat4x4 tfm;
+
+    geom.clear();
+    geom.setColour(col);
+
+    // transform mesh data structures into a form suitable for rendering
+    // by flattening the triangle list
+    for(t = 0; t < (int) tris.size(); t++)
+        for(p = 0; p < 3; p++)
+            faces.push_back(tris[t].v[p]);
+
+    // construct transformation matrix
+    buildTransform(tfm);
+    geom.genMesh(&verts, &norms, &faces, tfm);
+
+    // bind geometry to buffers and return drawing parameters, if possible
+    if(geom.bindBuffers(view))
+    {
+        sdd = geom.getDrawParameters();
+        return true;
+    }
+    else
+       return false;
+}
+
+bool Mesh::containedPoint(vpPoint pnt)
+{
+    int incount = 0, outcount = 0, hits, i, t, p;
+    glm::vec3 v[3], origin, xsect, ray;
+    vpPoint vert;
+    Vector dir;
+    glm::mat4x4 tfm, idt;
+    glm::vec4 vproj;
+
+    // ideally this needs an acceleration structure, such as a bounding sphere hierarchy
+
+    srand(time(0));
+
+    // sample over multiple rays to avoid numerical issues (e.g., ray hits a vertex or edge)
+    origin = glm::vec3(pnt.x, pnt.y, pnt.z);
+    // cerr << "origin: " << pnt.x << ", " << pnt.y << ", " << pnt.z << endl;
+
+    // construct transformation matrix
+    buildTransform(tfm);
+
+    for(i = 0; i < raysamples; i++)
+    {
+        hits = 0;
+
+        // sampling ray with random direction
+        // avoid axis aligned rays because more likely to lead to numerical issues with axis aligned structures
+        dir = Vector((float) (rand()%1000-500), (float) (rand()%1000-500), (float) (rand()%1000-500));
+        dir.normalize();
+        ray = glm::vec3(dir.i, dir.j, dir.k);
+
+        for(t = 0; t < (int) tris.size(); t++)
+        {
+            for(p = 0; p < 3; p++)
+            {
+                vert = verts[tris[t].v[p]];
+                vproj = tfm * glm::vec4(vert.x, vert.y, vert.z, 1.0f);
+                v[p] = glm::vec3(vproj.x, vproj.y, vproj.z);
+            }
+            if(glm::intersectRayTriangle(origin, ray, v[0], v[1], v[2], xsect) || glm::intersectRayTriangle(origin, ray, v[0], v[2], v[1], xsect)) // test triangle in both windings because intersectLineTriangle is winding dependent
+                hits++;
+        }
+
+        // cerr << "num hits on " << i << " = " << hits << endl;
+        if(hits%2 == 0) // even number of intersection means point is outside
+            outcount++;
+        else // point is inside
+            incount++;
+    }
+
+    // consensus wins
+    return (incount > outcount);
+}
+
 void Mesh::boxFit(float sidelen)
 {
     vpPoint bnear, bfar, pnt;
@@ -115,94 +233,6 @@ void Mesh::boxFit(float sidelen)
             verts[v] = pnt;
         }
     }
-}
-
-Mesh::Mesh()
-{
-    col = stdCol;
-}
-
-Mesh::~Mesh()
-{
-    clear();
-}
-
-void Mesh::clear()
-{
-    verts.clear();
-    tris.clear();
-    geom.clear();
-}
-
-bool Mesh::genGeometry(View * view, ShapeDrawData &sdd)
-{
-    vector<int> faces;
-    int t, p;
-
-    geom.clear();
-    geom.setColour(col);
-
-    // transform mesh data structures into a form suitable for rendering
-    // by flattening the triangle list
-    for(t = 0; t < (int) tris.size(); t++)
-        for(p = 0; p < 3; p++)
-            faces.push_back(tris[t].v[p]);
-    geom.genMesh(&verts, &norms, &faces);
-
-    // bind geometry to buffers and return drawing parameters, if possible
-    if(geom.bindBuffers(view))
-    {
-        sdd = geom.getDrawParameters();
-        return true;
-    }
-    else
-       return false;
-}
-
-bool Mesh::containedPoint(vpPoint pnt)
-{
-    int incount = 0, outcount = 0, hits, i, t, p;
-    glm::vec3 v[3], origin, xsect, ray;
-    vpPoint vert;
-    Vector dir;
-
-    // ideally this needs an acceleration structure, such as a bounding sphere hierarchy
-
-    srand(time(0));
-
-    // sample over multiple rays to avoid numerical issues (e.g., ray hits a vertex or edge)
-    origin = glm::vec3(pnt.x, pnt.y, pnt.z);
-    // cerr << "origin: " << pnt.x << ", " << pnt.y << ", " << pnt.z << endl;
-    for(i = 0; i < raysamples; i++)
-    {
-        hits = 0;
-
-        // sampling ray with random direction
-        // avoid axis aligned rays because more likely to lead to numerical issues with axis aligned structures
-        dir = Vector((float) (rand()%1000-500), (float) (rand()%1000-500), (float) (rand()%1000-500));
-        dir.normalize();
-        ray = glm::vec3(dir.i, dir.j, dir.k);
-
-        for(t = 0; t < (int) tris.size(); t++)
-        {
-            for(p = 0; p < 3; p++)
-            {
-                vert = verts[tris[t].v[p]];
-                v[p] = glm::vec3(vert.x, vert.y, vert.z);
-            }
-            if(glm::intersectRayTriangle(origin, ray, v[0], v[1], v[2], xsect) || glm::intersectRayTriangle(origin, ray, v[0], v[2], v[1], xsect)) // test triangle in both windings because intersectLineTriangle is winding dependent
-                hits++;
-        }
-
-        // cerr << "num hits on " << i << " = " << hits << endl;
-        if(hits%2 == 0) // even number of intersection means point is outside
-            outcount++;
-        else // point is inside
-            incount++;
-    }
-
-    // consensus wins
-    return (incount > outcount);
 }
 
 bool Mesh::readSTL(string filename)

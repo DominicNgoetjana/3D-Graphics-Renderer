@@ -24,6 +24,9 @@ private:
     std::vector<Vector> norms;  ///< per vertex normals
     std::vector<Triangle> tris; ///< edges connecting vertices
     GLfloat * col;              ///< (r,g,b,a) colour
+    float scale;                ///< scaling factor
+    Vector trx;                 ///< translation
+    float xrot, yrot, zrot;     ///< rotation angle about x, y, and z axes
 
     /**
      * Search list of vertices to find matching point
@@ -36,6 +39,12 @@ private:
 
     /// Generate vertex normals by averaging normals of the surrounding faces
     void deriveVertNorms();
+
+    /**
+     * Composite rotations, translation and scaling into a single transformation matrix
+     * @param tfm   composited transformation matrix
+     */
+    void buildTransform(glm::mat4x4 &tfm);
 
 public:
 
@@ -50,6 +59,24 @@ public:
 
     /// Test whether mesh is empty of any geometry (true if empty, false otherwise)
     bool empty(){ return verts.empty(); }
+
+    /// Setter for scale
+    void setScale(float scf){ scale = scf; }
+
+    /// Getter for scale
+    float getScale(){ return scale; }
+
+    /// Setter for translation
+    void setTranslation(Vector tvec){ trx = tvec; }
+
+    /// Getter for translation
+    Vector getTranslation(){ return trx; }
+
+    /// Setter for rotation angles
+    void setRotations(float ax, float ay, float az){ xrot = ax; yrot = ay; zrot = az; }
+
+    /// Getter for rotation angles
+    void getRotations(float &ax, float &ay, float &az){ ax = xrot; ay = yrot; az = zrot; }
 
     /**
      * Generate triangle mesh geometry for OpenGL rendering

@@ -126,20 +126,29 @@ void ShapeGeometry::genSphere(float radius, int slices, int stacks, glm::mat4x4 
     }
 }
 
-void ShapeGeometry::genMesh(std::vector<vpPoint> * points, std::vector<Vector> * norms, std::vector<int> * faces)
+void ShapeGeometry::genMesh(std::vector<vpPoint> * points, std::vector<Vector> * norms, std::vector<int> * faces, glm::mat4x4 trm)
 {
-    int v, f;
+    int i;
+    glm::vec4 p;
+    glm::vec3 v;
 
-    for(v = 0; v < (int) points->size(); v++)
+    for(i = 0; i < (int) points->size(); i++)
     {
-        verts.push_back((* points)[v].x); verts.push_back((* points)[v].y); verts.push_back((* points)[v].z); // position
+        // apply transformation
+        p = trm * glm::vec4((* points)[i].x, (* points)[i].y, (* points)[i].z, 1.0f);
+        // v = glm::mat3(trm) * glm::normalize(glm::vec3(x, y, z));
+        v = glm::transpose(glm::inverse(glm::mat3(trm))) * glm::normalize(glm::vec3((* norms)[i].i, (* norms)[i].j, (* norms)[i].k));
+        v = glm::normalize(v);
+
+
+        verts.push_back(p.x); verts.push_back(p.y); verts.push_back(p.z); // position
         verts.push_back(0.0f); verts.push_back(0.0f); // texture coordinates
-        verts.push_back((* norms)[v].i); verts.push_back((* norms)[v].j); verts.push_back((* norms)[v].k); // normal
+        verts.push_back(v.x); verts.push_back(v.y); verts.push_back(v.z); // normal
     }
 
-    for(f = 0; f < (int) faces->size(); f++)
+    for(i = 0; i < (int) faces->size(); i++)
     {
-        indices.push_back((* faces)[f]);
+        indices.push_back((* faces)[i]);
     }
 }
 
