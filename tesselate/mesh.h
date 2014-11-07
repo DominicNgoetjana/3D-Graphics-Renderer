@@ -11,10 +11,28 @@
 
 using namespace std;
 
+const int sphperdim = 20;
+
 struct Triangle
 {
     int v[3];   ///< index into the vertex list for triangle vertices
     Vector n;   ///< outward facing unit normal to the triangle
+};
+
+class AccelSphere
+{
+public:
+    vpPoint c;  ///< sphere center
+    float r;    ///< spehre radius
+    std::vector<int> ind; ///< triangle indices included in the bounding sphere
+
+    /**
+     * Test whether a point falls inside the acceleration sphere
+     * @param pnt   point to test for containment
+     * @retval @c true if the point falls within the sphere
+     * @retval @c false otherwise
+     */
+    bool pointInSphere(vpPoint pnt);
 };
 
 class Mesh
@@ -27,6 +45,7 @@ private:
     float scale;                ///< scaling factor
     Vector trx;                 ///< translation
     float xrot, yrot, zrot;     ///< rotation angle about x, y, and z axes
+    std::vector<AccelSphere> boundspheres; ///< bounding sphere accel structure
 
     /**
      * Search list of vertices to find matching point
@@ -45,6 +64,12 @@ private:
      * @param tfm   composited transformation matrix
      */
     void buildTransform(glm::mat4x4 &tfm);
+
+    /**
+     * Create bounding sphere acceleration structure for mesh
+     * @param maxspheres    the number of spheres placed along the longest side of the bounding volume
+     */
+    void buildSphereAccel(int maxspheres);
 
 public:
 

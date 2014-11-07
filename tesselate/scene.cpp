@@ -282,6 +282,7 @@ void Scene::packCubesInMesh(Mesh * mesh)
     Vector extent = voldiag;
     float cubelen = tesslen;
     float halflen = 0.5f * cubelen;
+    // Timer time;
 
     if(!(extent.i > 0.0f && extent.j > 0.0f && extent.k > 0.0f))
     {
@@ -290,6 +291,7 @@ void Scene::packCubesInMesh(Mesh * mesh)
 
     clear();
 
+    // time.start();
     // number of cubes in dimension
     numx = (int) (extent.i / cubelen);
     numy = (int) (extent.j / cubelen);
@@ -303,6 +305,8 @@ void Scene::packCubesInMesh(Mesh * mesh)
                 if(mesh->containedPoint(c)) // only include if center falls inside mesh
                     addCube(o, cubelen);
             }
+    // time.stop();
+    // cerr << "mesh gen time = " << time.peek() << endl;
 }
 
 void Scene::intersectMesh(Mesh * mesh)

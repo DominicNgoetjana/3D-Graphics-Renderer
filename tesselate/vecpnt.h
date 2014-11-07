@@ -437,51 +437,41 @@ public:
     }
 };
 
-class BoundRect
+class BoundBox
 {
-private:
-
-    friend class boost::serialization::access;
-    /// Boost serialization
-    template<class Archive> void serialize(Archive & ar, const unsigned int version)
-    {
-        ar & min;
-        ar & max;
-        ar & farextent;
-    }
 
 public:
 
     vpPoint min, max;
-    float farextent;
 
-    BoundRect(){ reset(10000000000.0f); }
+    BoundBox(){ reset(); }
 
-    BoundRect(float far){ reset(far); }
-
-    // reset: initialize bounding box to its default settting
-    inline void reset(float far)
+    /// Initialize bounding box to its default settting
+    inline void reset()
     {
-        farextent = far;
-        min = vpPoint(far, 0.0f, far);
-        max = vpPoint(-1.0*far, 0.0f, -1.0f*far);
+        min = vpPoint(HUGE_VALF, HUGE_VALF, HUGE_VALF);
+        max = vpPoint(-HUGE_VALF, -HUGE_VALF, -HUGE_VALF);
     }
 
-    // includePnt: compare point against current bounding box and expand as required
+    /// Compare point against current bounding box and expand as required
     inline void includePnt(vpPoint pnt)
     {
         if(pnt.x < min.x)
             min.x = pnt.x;
         if(pnt.x > max.x)
             max.x = pnt.x;
+        if(pnt.y < min.y)
+            min.y = pnt.y;
+        if(pnt.y > max.y)
+            max.y = pnt.y;
         if(pnt.z < min.z)
             min.z = pnt.z;
         if(pnt.z > max.z)
             max.z = pnt.z;
     }
 
-    // daiglen: return the length of the diagonal of the bounding box
-    inline float diaglen()
+    /// Return the length of the diagonal of the bounding box
+    inline float diagLen()
     {
         Vector diag;
 
@@ -489,31 +479,33 @@ public:
         return diag.length();
     }
 
-    /// find the shortest distance to the bounding box
-    float nearest(vpPoint p) const;
-
-    /// find the distance to the farthest corner of the bounding box
-    float farthest(vpPoint p) const;
-
-    inline bool empty() const
+    /// Return the diagonal of the bounding box
+    Vector getDiag()
     {
-        return (min.x == farextent && min.y == 0.0f && min.z == farextent && max.x == -1.0f*farextent && max.y == 0.0f && max.z == -1.0f*farextent);
+        Vector diag;
+
+        diag.diff(min, max);
+        return diag;
+    }
+
+    /// Return true if the bounding box is at default initial values
+    inline bool empty()
+    {
+        vpPoint absmin, absmax;
+
+        absmax = vpPoint(HUGE_VALF, HUGE_VALF, HUGE_VALF);
+        absmin = vpPoint(-HUGE_VALF, -HUGE_VALF, -HUGE_VALF);
+        return (min == absmax && max == absmin);
+        // (min.x ==  && min.y == 0.0f && min.z == farextent && max.x == -1.0f*farextent && max.y == 0.0f && max.z == -1.0f*farextent);
     }
 
     /// Enlarge the bounding box uniformly in all directions
     inline void expand(float extent)
     {
         max.x += extent; min.x -= extent;
+        max.y += extent; min.y -= extent;
         max.z += extent; min.z -= extent;
     }
-
-    /// test method
-    // void test();
-
-    // rayBoxIntersect: find whether a ray <r> intersects the bounding box on the parametric
-    //                  interval <t0> to <t1>.
-    //                  Return <false> if there is no intersection, <true> otherwise.
-    // bool rayBoxIntersect(Ray r, float t0, float t1);
 };
 
 
