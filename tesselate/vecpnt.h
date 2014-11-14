@@ -250,7 +250,7 @@ public:
     */
 
     /* ==: return true if two vectors are identical within a tolerance */
-    inline int operator ==(Vector& v)
+    inline int operator ==(Vector v)
     { double di, dj, dk;
 
       di = i - v.i;
@@ -513,19 +513,10 @@ public:
 //// USEFUL GEOMETRY ROUTINES
 ////
 
-// linePointDist:   Find the shortest distance from a point <query> to a line segment, represented by an origin <start>
+// rayPointDist:   Find the shortest distance from a point <query> to a line segment, represented by an origin <start>
 //                  and direction <dirn>. Return the shortest distance from the line segment to the point as <dist> and
 //                  the parameter value on the line segment of this intersection as <tval>.
-//                  This query assumes 2D computations (z coord dropped)
 void rayPointDist(vpPoint start, Vector dirn, vpPoint query, float &tval, float &dist);
-
-// linesDist:   Find the shortest distance between two line segments <q> and <t> represented by their endpoints.
-//              Return the parameter value <qval> on the first segment of the closest approach and the distance as <mindist>.
-//              Also return <maxdist>, the farthest distance between the two line segments.
-void linesDist(vpPoint * q, vpPoint * t, float &qval, float &mindist, float &maxdist);
-
-// lineCrossing: return <true> if two 2d lines e1[0]->e1[1] and e2[0]->e2[1] intersect, false otherwise.
-bool lineCrossing(vpPoint * e1, vpPoint * e2);
 
 // clamp: ensure that parameter <t> falls in [0,1]
 void clamp(float & t);

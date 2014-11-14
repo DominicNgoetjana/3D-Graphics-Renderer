@@ -86,9 +86,11 @@ Window::Window()
     QGroupBox *radGroup = new QGroupBox(tr("Wireframe Settings"));
     QLabel *radSphereLabel = new QLabel(tr("Vertex Radius:"));
     radSphereEdit = new QLineEdit;
+    radSphereEdit->setFixedWidth(75);
     radSphereEdit->setValidator(new QDoubleValidator(0.02, 5.0, 2, radSphereEdit));
     QLabel *radCylLabel = new QLabel(tr("Edge Radius:"));
     radCylEdit = new QLineEdit;
+    radCylEdit->setFixedWidth(75);
     radCylEdit->setValidator(new QDoubleValidator(0.02, 5.0, 2, radCylEdit));
 
     // set initial radius values in panel
@@ -107,15 +109,19 @@ Window::Window()
     QGroupBox *volGroup = new QGroupBox(tr("Volume Settings"));
     QLabel *lenLabel = new QLabel(tr("Length:"));
     lenEdit = new QLineEdit;
+    lenEdit->setFixedWidth(75);
     lenEdit->setValidator(new QDoubleValidator(1.0, 50.0, 2, lenEdit));
     QLabel *widthLabel = new QLabel(tr("Width:"));
     widthEdit = new QLineEdit;
+    widthEdit->setFixedWidth(75);
     widthEdit->setValidator(new QDoubleValidator(1.0, 50.0, 2, widthEdit));
     QLabel *hghtLabel = new QLabel(tr("Height:"));
     hghtEdit = new QLineEdit;
+    hghtEdit->setFixedWidth(75);
     hghtEdit->setValidator(new QDoubleValidator(1.0, 50.0, 2, hghtEdit));
     QLabel *sideLabel = new QLabel(tr("Element Side:"));
     sideEdit = new QLineEdit;
+    sideEdit->setFixedWidth(75);
     sideEdit->setValidator(new QDoubleValidator(0.2, 50.0, 2, sideEdit));
 
     // set initial volume values in panel
@@ -138,24 +144,31 @@ Window::Window()
     volGroup->setLayout(volLayout);
     paramLayout->addWidget(volGroup);
 
-    // volume settings
+    // mesh settings
     QGroupBox *meshGroup = new QGroupBox(tr("Mesh Settings"));
     QLabel *scfLabel = new QLabel(tr("Scale:"));
     scfEdit = new QLineEdit;
+    scfEdit->setFixedWidth(75);
     scfEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, scfEdit));
     QLabel *trsLabel = new QLabel(tr("Translation:"));
     txEdit = new QLineEdit;
+    txEdit->setFixedWidth(75);
     txEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, txEdit));
     tyEdit = new QLineEdit;
+    tyEdit->setFixedWidth(75);
     tyEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, tyEdit));
     tzEdit = new QLineEdit;
+    tzEdit->setFixedWidth(75);
     tzEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, tzEdit));
     QLabel *rotLabel = new QLabel(tr("Rotation:"));
     rxEdit = new QLineEdit;
+    rxEdit->setFixedWidth(75);
     rxEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, rxEdit));
     ryEdit = new QLineEdit;
+    ryEdit->setFixedWidth(75);
     ryEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, ryEdit));
     rzEdit = new QLineEdit;
+    rzEdit->setFixedWidth(75);
     rzEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, rzEdit));
 
     // set initial mesh values in panel
@@ -185,13 +198,33 @@ Window::Window()
     meshGroup->setLayout(meshLayout);
     paramLayout->addWidget(meshGroup);
 
+    // deformation settings
+    QGroupBox *defGroup = new QGroupBox(tr("Deformation Settings"));
+    QLabel *defLabel = new QLabel(tr("Magnitude:"));
+    defEdit = new QLineEdit;
+    defEdit->setFixedWidth(75);
+    defEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, defEdit));
+
+    // set initial deformation values in panel
+    AxialDef axdef;
+    float axval;
+    perspectiveView->getScene()->getDefParam(axdef, axval);
+    defEdit->setText(QString::number(axval, 'g', 2));
+
+    QGridLayout *defLayout = new QGridLayout;
+    defLayout->addWidget(defLabel, 0, 0);
+    defLayout->addWidget(defEdit, 0, 1);
+
+    defGroup->setLayout(defLayout);
+    paramLayout->addWidget(defGroup);
+
     // button for intersecting mesh with scene
-    QPushButton *xsectButton = new QPushButton(tr("Intersect"));
+    QPushButton *xsectButton = new QPushButton(tr("1. Intersect"));
     paramLayout->addWidget(xsectButton);
 
     // button for generating a 3d print - not connected yet
-    QPushButton *genButton = new QPushButton(tr("Generate"));
-    paramLayout->addWidget(genButton);
+    QPushButton *voxButton = new QPushButton(tr("2. Voxelise"));
+    paramLayout->addWidget(voxButton);
 
     // signal to slot connections
     connect(perspectiveView, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
@@ -208,7 +241,9 @@ Window::Window()
     connect(rxEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
     connect(ryEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
     connect(rzEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(defEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
     connect(xsectButton, &QPushButton::clicked, this, &Window::xsectPress);
+    connect(voxButton, &QPushButton::clicked, this, &Window::voxPress);
 
     paramPanel->setLayout(paramLayout);
     mainLayout->addWidget(perspectiveView, 0, 1);
@@ -329,6 +364,12 @@ void Window::xsectPress()
     else // error message
         cerr << "Error Window::xsectPress: must load a shape to intersect against first." << endl;
 
+}
+
+void Window::voxPress()
+{
+    perspectiveView->getScene()->voxelise(0.05f);
+    perspectiveView->setGeometryUpdate(true);
 }
 
 void Window::showParamOptions()
@@ -477,6 +518,18 @@ void Window::lineEditChange()
             az = val;
             perspectiveView->getXSect()->setRotations(ax, ay, az);
             perspectiveView->setMeshVisible(true);
+        }
+    }
+    if(sender() == defEdit) // deformation axis value
+    {
+        val = defEdit->text().toFloat(&ok);
+        if(ok)
+        {
+            AxialDef axdef;
+            float axval;
+            perspectiveView->getScene()->getDefParam(axdef, axval);
+            perspectiveView->getScene()->setDefParam(axdef, val);
+            perspectiveView->setGeometryUpdate(true);
         }
     }
 

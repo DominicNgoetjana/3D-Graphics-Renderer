@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <iostream>
 #include "renderer.h"
+#include "voxels.h"
 
 using namespace std;
 
@@ -19,20 +20,40 @@ struct Triangle
     Vector n;   ///< outward facing unit normal to the triangle
 };
 
-class AccelSphere
+struct Edge
+{
+    int v[2];   ///< index into the vertex list for edge endpoints
+};
+
+class Sphere
 {
 public:
     vpPoint c;  ///< sphere center
     float r;    ///< spehre radius
-    std::vector<int> ind; ///< triangle indices included in the bounding sphere
+    std::vector<int> ind; ///< triangle indices included in the bounding sphere. Used for acceleration struct, otherwise ignored
 
     /**
-     * Test whether a point falls inside the acceleration sphere
+     * Test whether a point falls inside the sphere
      * @param pnt   point to test for containment
      * @retval @c true if the point falls within the sphere
      * @retval @c false otherwise
      */
     bool pointInSphere(vpPoint pnt);
+};
+
+class Cylinder
+{
+public:
+    vpPoint s, e;   ///< start and end points of the cylinder
+    float r;        ///< cylinder radius
+
+    /**
+     * Test whether a point falls inside the cylinder
+     * @param pnt   point to test for containment
+     * @retval @c true if the point falls within the sphere
+     * @retval @c false otherwise
+     */
+    bool pointInCylinder(vpPoint pnt);
 };
 
 class Mesh
@@ -45,7 +66,7 @@ private:
     float scale;                ///< scaling factor
     Vector trx;                 ///< translation
     float xrot, yrot, zrot;     ///< rotation angle about x, y, and z axes
-    std::vector<AccelSphere> boundspheres; ///< bounding sphere accel structure
+    std::vector<Sphere> boundspheres; ///< bounding sphere accel structure
 
     /**
      * Search list of vertices to find matching point
@@ -56,8 +77,21 @@ private:
      */
     bool findVert(vpPoint pnt, int &idx);
 
+    /**
+     * Search a list of edges to find matching edge
+     * @param edges     edge list
+     * @param e         edge to find
+     * @param[out] idx  index of edge in list if found, otherwise -1
+     * @retval @c true  if the point is found in the vertex list
+     * @retval @c false otherwise
+     */
+    bool findEdge(vector<Edge> edges, Edge e, int &idx);
+
     /// Generate vertex normals by averaging normals of the surrounding faces
     void deriveVertNorms();
+
+    /// Generate face normals from triangle vertex positions
+    void deriveFaceNorms();
 
     /**
      * Composite rotations, translation and scaling into a single transformation matrix
@@ -103,6 +137,9 @@ public:
     /// Getter for rotation angles
     void getRotations(float &ax, float &ay, float &az){ ax = xrot; ay = yrot; az = zrot; }
 
+    /// Setter for colour
+    void setColour(GLfloat * setcol){ col = setcol; }
+
     /**
      * Generate triangle mesh geometry for OpenGL rendering
      * @param view      current view parameters
@@ -127,6 +164,14 @@ public:
     void boxFit(float sidelen);
 
     /**
+     * Apply marching cubes to a voxel volume to generate a mesh
+     * @param vox           voxel volume
+     * @param voxedgelen    side length of a voxel cube
+     * @param voxorigin     offset of front, bottom, left vertex of voxel volume
+     */
+    void marchingCubes(VoxelVolume vox, float voxedgelen, Vector voxorigin);
+
+    /**
      * Read in triangle mesh from STL format binary file
      * @param filename  name of file to load (STL format)
      * @retval @c true  if load succeeds
@@ -141,6 +186,27 @@ public:
      * @retval @c false otherwise.
      */
     bool writeSTL(string filename);
+
+    /**
+     * Basic mesh validity tests - no duplicates vertices, no dangling vertices, edges indices within bounds
+     * @retval @c true if basic validity tests are passed
+     * @retval @c false otherwise
+     */
+    bool basicValidity();
+
+    /**
+     * Check that the mesh is a closed two-manifold
+     * @retval @c true if the mesh is two-manifold
+     * @retval @c false otherwise
+     */
+    bool manifoldValidity();
+
+    /**
+     * Test that the mesh forms a single connected structure
+     * @retval @c true if any vertex can be reached by edge traversal from any other
+     * @retval @c false otherwise
+     */
+    bool connectionValidity();
 };
 
 #endif

@@ -131,5 +131,5 @@ void TestVoxels::testBounds()
 }
 
 //#if 0 /* Disabled since it crashes the whole test suite */
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(TestVoxels, TestSet::perBuild());
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(TestVoxels, TestSet::perCommit());
 //#endif

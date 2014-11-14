@@ -48,5 +48,5 @@ void TestScene::testValidity()
 }
 
 //#if 0 /* Disabled since it crashes the whole test suite */
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(TestScene, TestSet::perBuild());
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(TestScene, TestSet::perCommit());
 //#endif

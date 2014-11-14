@@ -11,9 +11,10 @@
 
 using namespace std;
 
-struct Edge
+enum class AxialDef
 {
-    int v[2];   ///< index into the vertex list for edge endpoints
+    IDENTITY,       ///< no transformation at all
+    TWIST,          ///< rotate around the y-axis in a spiral like fashion
 };
 
 class Scene
@@ -28,6 +29,12 @@ private:
     float cylrad;                   ///< cylinder radius in cm
     float tesslen;                  ///< side length of an individual tesselation element in cm
     Vector voldiag;                 ///< diagonal of scene bounding box in cm
+    AxialDef deftype;               ///< type of deformation applied to tesselation
+    float defval;                   ///< axial value for global deformation
+    VoxelVolume vox;                ///< voxel representation of scene
+    float voxsidelen;               ///< side length of a single voxel
+    bool voxactive;                 ///< voxel representation has been created
+    Mesh voxmesh;                   ///< isosurface of voxel volume
 
     /**
      * Search list of vertices to find matching point
@@ -46,6 +53,32 @@ private:
      * @retval @c false otherwise
      */
     bool findEdge(Edge edge, int &idx);
+
+    /**
+     * Apply an axial deformation to a point
+     * @param pnt   input point to deform
+     * @param axdef type of axial deformation to apply
+     * @param axval parameter for controlling the magnitude of deformation relative to the z-axis
+     */
+    vpPoint deform(vpPoint pnt, AxialDef axdef, float axval);
+
+    /**
+     * Generate triangle mesh geometry for OpenGL rendering of the idealised tesselation structure
+     * @param view      current view parameters
+     * @param[out] sdd  openGL parameters required to draw this geometry
+     * @retval @c true  if buffers are bound successfully, in which case sdd is valid
+     * @retval @c false otherwise
+     */
+    bool genTessRender(View * view, ShapeDrawData &sdd);
+
+    /**
+     * Generate triangle mesh geometry for OpenGL rendering of voxel structure
+     * @param view      current view parameters
+     * @param[out] sdd  openGL parameters required to draw this geometry
+     * @retval @c true  if buffers are bound successfully, in which case sdd is valid
+     * @retval @c false otherwise
+     */
+    bool genVoxRender(View * view, ShapeDrawData &sdd);
 
 public:
 
@@ -87,6 +120,21 @@ public:
     void setTessLength(float len)
     {
         tesslen = len;
+        packCubes(vpPoint(-voldiag.i/2.0f, -voldiag.j/2.0f, -voldiag.k/2.0f), voldiag, tesslen);
+    }
+
+    /// getter for deformation type and value
+    void getDefParam(AxialDef &axdef, float &axval)
+    {
+        axdef = deftype;
+        axval = defval;
+    }
+
+    /// setter for deformation type and value
+    void setDefParam(AxialDef axdef, float axval = 0.0f)
+    {
+        deftype = axdef;
+        defval = axval;
         packCubes(vpPoint(-voldiag.i/2.0f, -voldiag.j/2.0f, -voldiag.k/2.0f), voldiag, tesslen);
     }
 
@@ -144,6 +192,12 @@ public:
      * @param mesh  intersecting mesh
      */
     void intersectMesh(Mesh * mesh);
+
+    /** 
+     * convert tesselation into a voxel representation
+     * @param voxlen    side length of an individual voxel
+     */
+    void voxelise(float voxlen);
 
     /**
      * Test that there are no duplicate vertices or edges in the scene

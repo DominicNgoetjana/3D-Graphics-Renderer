@@ -7,6 +7,7 @@
 #include <vector>
 #include <stdio.h>
 #include <iostream>
+#include "vecpnt.h"
 
 class VoxelVolume
 {
@@ -41,6 +42,11 @@ public:
     ~VoxelVolume();
 
     /**
+     * Delete voxel volume grid
+     */
+    void clear();
+
+    /**
      * Set all voxel elements in volume to empty or occupied
      * @param setval    new value for all voxel elements, either empty (false) or occupied (true)
      */
@@ -51,6 +57,12 @@ public:
      * @param dimx, dimy, dimz     number of voxels in x, y, z dimensions
      */
     void getDim(int &dimx, int &dimy, int &dimz);
+
+    /**
+     * Set the dimensions of the voxel volume and allocate memory accordingly
+     * @param dimx, dimy, dimz     number of voxels in x, y, z dimensions
+     */
+    void setDim(int &dimx, int &dimy, int &dimz);
 
     /**
      * Set a single voxel element to either empty or occupied
@@ -68,6 +80,27 @@ public:
      * @retval @c false if the voxel is empty.
      */
     bool get(int x, int y, int z);
+
+    /**
+     * Return the marching cubes vertex bit code for a voxel cell
+     * @param x, y, z   3d index for the lower, front, left corner of the cell
+     * @retval  bit code index for MC table
+     */
+    int getMCVertIdx(int x, int y, int z);
+
+    /**
+     * Return the marching cubes edge intersection bit code corresponding to a vertex bit code
+     * @param vcode     vertex pattern bit code
+     * @retval  edge bit code index for MC table
+     */
+    int getMCEdgeIdx(int vcode);
+
+    /**
+     * Return the marching cubes edge intersection corresponding to and edge bit position
+     * @param ebit  bit position corresponding to a cube edge
+     * @retval      position in unit cube of intersection
+     */
+    vpPoint getMCEdgeXsect(int ebit);
 };
 
 #endif

@@ -1,6 +1,7 @@
 set(TEST_SOURCES
     testutil.cpp
     test_voxels.cpp
+    test_mesh.cpp
     test_scene.cpp
     tilertest.cpp
 )

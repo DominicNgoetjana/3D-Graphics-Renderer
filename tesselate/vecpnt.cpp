@@ -105,20 +105,6 @@ void Plane::projectPnt(vpPoint pnt, vpPoint * proj)
     svec.pntplusvec(pnt, proj);
 }
 
-/*
-void Plane::drawPlane()
-{
-    float frontCol[] = { 0.0f, 0.0f, 1.0f, 1.0f };
-    float backCol[] = { 0.0f, 1.0f, 0.0f, 1.0f };
-
-    // generate origin
-
-    glBegin(GL_POLYGON);
-
-
-    glEnd();
-} */
-
 void rayPointDist(vpPoint start, Vector dirn, vpPoint query, float &tval, float &dist)
 {
     float den;
@@ -126,11 +112,11 @@ void rayPointDist(vpPoint start, Vector dirn, vpPoint query, float &tval, float 
     Vector closevec;
 
     den = dirn.sqrdlength();
-    if(den == 0.0f) // not a valid line segmen
+    if(den == 0.0f) // not a valid line segment
         dist = -1.0f;
     else
     {
-        // get parameter value of closest poin
+        // get parameter value of closest point
         tval = dirn.i * (query.x - start.x) + dirn.j * (query.y - start.y) + dirn.k * (query.z - start.z);
         tval /= den;
 
@@ -141,21 +127,6 @@ void rayPointDist(vpPoint start, Vector dirn, vpPoint query, float &tval, float 
         closevec.diff(query, closest);
         dist = closevec.length();
     }
-}
-
-bool lineCrossing(vpPoint * e1, vpPoint * e2)
-{
-    float a1, b1, c1, a2, b2, c2;
-
-    // form implicit equations for the two lines
-    a1 = e1[0].y - e1[1].y; b1 = e1[1].x - e1[0].x; c1 = -1.0f * (a1*e1[0].x + b1*e1[0].y);
-    a2 = e2[0].y - e2[1].y; b2 = e2[1].x - e2[0].x; c2 = -1.0f * (a2*e2[0].x + b2*e2[0].y);
-
-    // now test crossing by difference of signs method
-    if((a1*e2[0].x+b1*e2[0].y+c1)*(a1*e2[1].x+b1*e2[1].y+c1) < 0.0f)  // on opposite sides of e1
-        if((a2*e1[0].x+b2*e1[0].y+c2)*(a2*e1[1].x+b2*e1[1].y+c2) < 0.0f) // on opposite sides of e2
-            return true;
-    return false;
 }
 
 void clamp(float & t)
