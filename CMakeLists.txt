@@ -1,6 +1,7 @@
 # This is needed for automoc
 cmake_minimum_required(VERSION 2.8.7)
 include(CheckLibraryExists)
+set( CMAKE_VERBOSE_MAKEFILE on )
 
 option(SMOKE_TEST "run a smoke test on every build" 1)
 option(COVERAGE "compile for use with gcov" 0)
@@ -14,58 +15,31 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
 ### Check for dependencies
 set(Boost_USE_MULTITHREADED ON)
 add_definitions(-DBOOST_FILESYSTEM_VERSION=3)
-find_package(Boost 1.49 REQUIRED COMPONENTS filesystem program_options serialization system)
+find_package(Boost REQUIRED COMPONENTS filesystem program_options serialization system)
 find_package(Doxygen)
 find_package(PkgConfig REQUIRED)
 find_package(PythonInterp)
-find_package(OpenCL)
-find_package(GDAL)
-find_package(LibSVM)
+#find_package(OpenCL)
 find_package(Qt5Widgets)
 find_package(Qt5OpenGL)
 find_package(OpenGL)
 find_package(GLUT)
 pkg_check_modules(CppUnit cppunit)
 pkg_check_modules(GLEW glew)
-pkg_check_modules(OpenEXR REQUIRED OpenEXR)
-pkg_check_modules(Eigen REQUIRED eigen3)
-pkg_check_modules(ImageMagick REQUIRED Magick++-6.Q16)
 
 ### Set include and link directories and definitions
 include_directories(
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/khronos_headers
-    ${OpenEXR_INCLUDE_DIRS}
-    ${Eigen_INCLUDE_DIRS}
-    ${ImageMagick_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
 )
 link_directories(
     ${PROJECT_SOURCE_DIR}/common
-    ${PROJECT_SOURCE_DIR}/clh
     ${PROJECT_SOURCE_DIR}/tesselate
     ${CppUnit_LIBRARY_DIRS}
-    ${OpenEXR_LIBRARY_DIRS}
-    ${Eigen_LIBRARY_DIRS}
-    ${ImageMagick_LIBRARY_DIRS}
     ${Boost_LIB_DIRS}
 )
 
-if (OPENCL_FOUND)
-    add_definitions(-D__CL_ENABLE_EXCEPTIONS)
-    # Needed to get OpenCL 1.1 symbols back
-    add_definitions(-DCL_USE_DEPRECATED_OPENCL_1_1_APIS)
-
-    include_directories(${OPENCL_INCLUDE_DIRS})
-    link_directories(${OPENCL_LIB_DIR})
-endif()
-
-if (GDAL_FOUND)
-    include_directories(${GDAL_INCLUDE_DIR})
-endif()
-if (LIBSVM_FOUND)
-    include_directories(${LIBSVM_INCLUDE_DIRS})
-endif()
 if (Qt5Widgets_FOUND)
     include_directories(${Qt5Widgets_INCLUDE_DIRS})
     add_definitions(${Qt5Widgets_DEFINITIONS})
@@ -90,29 +64,19 @@ if (CPPUNIT_FOUND)
 endif()
 
 ### Check which components to build
-if (PYTHONINTERP_FOUND AND (OPENCL_FOUND OR OPENGL_FOUND))
+if (PYTHONINTERP_FOUND AND OPENGL_FOUND)
     set(BUILD_SOURCE2CPP TRUE)
-endif()
-if (OPENCL_FOUND AND PYTHONINTERP_FOUND)
-    set(BUILD_SYNTHESIZER TRUE)
-    set(BUILD_CLH TRUE)
 endif()
 if (Qt5Widgets_FOUND
         AND Qt5OpenGL_FOUND
         AND OPENGL_FOUND
         AND GLUT_FOUND
         AND GLEW_FOUND
-        AND BUILD_SYNTHESIZER)
+        AND PYTHONINTERP_FOUND)
     set(BUILD_GUI TRUE)
 endif()
 if (DOXYGEN_FOUND)
     set(BUILD_DOCS TRUE)
-endif()
-if (LIBSVM_FOUND)
-    set(BUILD_UTSCLASSIFY TRUE)
-endif()
-if (GDAL_FOUND)
-    set(BUILD_GDAL2EXR TRUE)
 endif()
 if (CPPUNIT_FOUND)
     set(BUILD_TESTS TRUE)
@@ -125,7 +89,6 @@ if (BUILD_DOCS)
         COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
         MAIN_DEPENDENCY ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
         DEPENDS
-            ${CMAKE_CURRENT_SOURCE_DIR}/clh/*
             ${CMAKE_CURRENT_SOURCE_DIR}/common/*
             ${CMAKE_CURRENT_SOURCE_DIR}/tesselate/*
             ${CMAKE_CURRENT_SOURCE_DIR}/test/*
@@ -149,10 +112,10 @@ if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_CXX_LINKER_FLAGS_RELEASE} -s")
     endif()
     # Link time optimization gives much better performance
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto")
-    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -flto")
-    set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} -flto")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
+    set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+    set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO}")
 endif()
 if (CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -Wno-unused-local-typedefs")
@@ -172,12 +135,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     # Eigen generates lots of warnings due to the register keyword being deprecated
     add_definitions(-Dregister=)
 endif()
-if (SYNTHESIS_STATS)
-    add_definitions(-DSYNTHESIS_STATS)
-endif()
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DUTS_DEBUG_CONTAINERS")
+# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DUTS_DEBUG_CONTAINERS")
 
 add_subdirectory(common)
-add_subdirectory(clh)
 add_subdirectory(tesselate)
 add_subdirectory(test)

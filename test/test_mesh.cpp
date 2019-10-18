@@ -22,20 +22,43 @@ void TestMesh::tearDown()
 
 void TestMesh::testMeshing()
 {
-    mesh->readSTL("../bunny.stl");
+
+    mesh->readSTL("meshes/bunny.stl");
     CPPUNIT_ASSERT(mesh->basicValidity());
     CPPUNIT_ASSERT(!mesh->manifoldValidity()); // bunny has known holes in the bottom
-    CPPUNIT_ASSERT(mesh->connectionValidity());
+    cerr << "BUNNY TEST PASSED" << endl << endl;
 
-    // test point in cylinder routine
-    Cylinder cyl;
-    cyl.s = vpPoint(1.0f, 0.0f, 0.0f);
-    cyl.e = vpPoint(2.0f, 1.0f, 0.0f);
-    cyl.r = 0.5f;
-    CPPUNIT_ASSERT(!cyl.pointInCylinder(vpPoint(0.0f, -1.0f, 0.0f)));
-    CPPUNIT_ASSERT(cyl.pointInCylinder(vpPoint(1.5f, 0.5f, 0.1f)));
+    // test simple valid 2-manifold
+    mesh->validTetTest();
+    CPPUNIT_ASSERT(mesh->basicValidity());
+    CPPUNIT_ASSERT(mesh->manifoldValidity());
+    cerr << "SIMPLE VALIDITY TEST PASSED" << endl << endl;
+
+    // test for duplicate vertices, dangling vertices and out of bounds on vertex indices
+    mesh->basicBreakTest();
+    CPPUNIT_ASSERT(!mesh->basicValidity());
+    cerr << "BASIC INVALID MESH DETECTED CORRECTLY" << endl << endl;
+
+    // test for 2-manifold with boundary
+    mesh->openTetTest();
+    CPPUNIT_ASSERT(mesh->basicValidity());
+    CPPUNIT_ASSERT(!mesh->manifoldValidity());
+    cerr << "INVALID MESH WITH BOUNDARY DETECTED CORRECTLY" << endl << endl;
+
+    // test for non 2-manifold failure where surfaces touch at a single vertex
+    mesh->touchTetsTest();
+    CPPUNIT_ASSERT(mesh->basicValidity());
+    CPPUNIT_ASSERT(!mesh->manifoldValidity());
+    cerr << "INVALID PINCHED SURFACE TEST PASSED" << endl << endl;
+
+    // test for non 2-manifold overlapping triangles
+    mesh->overlapTetTest();
+    CPPUNIT_ASSERT(mesh->basicValidity());
+    CPPUNIT_ASSERT(!mesh->manifoldValidity());
+    cerr << "INVALID NON-2-MANIFOLD DETECTED CORRECTLY" << endl << endl;
+
 }
 
 //#if 0 /* Disabled since it crashes the whole test suite */
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(TestMesh, TestSet::perCommit());
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(TestMesh, TestSet::perBuild());
 //#endif

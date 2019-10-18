@@ -1,10 +1,9 @@
 #ifndef _INC_VIEW
 #define _INC_VIEW
-/* file: view.h
-   author: (c) James Gain, 2006
-   project: ScapeSketch - sketch-based design of procedural landscapes
-   notes: controlling viewpoint changes to support terrain sketching
-   changes: modified for 3D curve project 5 December 2012
+/**
+ * @file
+ *
+ * Controlling viewpoint changes.
 */
 
 
@@ -37,68 +36,69 @@ enum viewType {perspective, frontOrtho, upOrtho, leftOrtho};
 void trackball(float q[4], float p1x, float p1y, float p2x, float p2y);
 void axis_to_quat(float a[3], float phi, float q[4]);
 
-// information structure for view control
+/// Information structure for view control
 class View
 {
 private:
-    vpPoint cop;                // centre of projection
-    vpPoint light;              // light position for default diffuse rendering
-    Vector dir;                 // forward camera direction for current view
-    vpPoint focus, prevfocus, currfocus; // controls for transition of focal point
-    int focalstep;              // linear interpolation value for focal transition
-    float zoomdist;             // distance to origin
-    float perspwidth;           // back plane width of perspective projection
-    float bu, bv;                 // arcball position parameters in normalized coordinate image plane
-    float lastquat[4], curquat[4]; // quaternions for arcball
-    float viewscale;            // scale adaptation to terrain size
-    Timer time;
+    cgp::Point cop;                 ///< centre of projection
+    cgp::Point light;               ///< light position for default diffuse rendering
+    cgp::Vector dir;                ///< forward camera direction for current view
+    cgp::Point focus, prevfocus, currfocus; ///< controls for transition of focal point
+    int focalstep;                  ///< linear interpolation value for focal transition
+    float zoomdist;                 ///< distance to origin
+    float perspwidth;               ///< back plane width of perspective projection
+    float bu, bv;                   ///< arcball position parameters in normalized coordinate image plane
+    float lastquat[4], curquat[4];  ///< quaternions for arcball
+    float viewscale;                ///< scale adaptation to terrain size
 
     /// Recalculate viewing direction and up vector
     void updateDir();
 
 public:
 
-    float width, height;        // viewport dimensions
-    float startx, starty;       // bottom left corner of viewport
-    
+    float width, height;        ///< viewport dimensions
+    float startx, starty;       ///< bottom left corner of viewport
 
+    /// default constructor
     View(){ reset(); }
 
+    /// constructor with a viewing scale set to extent
     View(float extent){ reset(extent); }
 
+    /// destructor
     ~View(){}
 
-    /// Set view parameters to default
+    /// Set view parameters, with scale factor as extent
     void reset(float extent = 10000.0f)
     {
         perspwidth = 6.0f * tanf(0.5f * DEG2RAD * 45.0);
         resetLight();
         setDim(0.0f, 0.0f, 600.0f, 600.0f);
-        focus = vpPoint(0.0f, 0.0f, 0.0f);
+        focus = cgp::Point(0.0f, 0.0f, 0.0f);
         prevfocus = currfocus = focus;
         focalstep = 0;
         viewscale = extent;
         
-        zoomdist = 60.0f * viewscale;
+        zoomdist = 180.0f * viewscale;
 
         bu = 0.0f;
         bv = 0.0f;
         trackball(curquat, 0.0f, 0.0f, 0.0f, -0.5f);
-        cop = vpPoint(0.0f, 0.0f, 1.0f);
+        cop = cgp::Point(0.0f, 0.0f, 1.0f);
         updateDir();
     }
 
     /// Return the center of projection of the view, recalculated as necessary
-    inline vpPoint getCOP(){ return cop; }
+    inline cgp::Point getCOP(){ return cop; }
 
     /// Set the center of rotation to @a pnt, enabling an animated shift in the focal point
-    void setAnimFocus(vpPoint pnt);
+    void setAnimFocus(cgp::Point pnt);
     
     /// Set the center of rotation to @a pnt, with immediate non-animated transition
-    void setForcedFocus(vpPoint pnt);
+    void setForcedFocus(cgp::Point pnt);
     
     /// Return the center of rotation
-    inline vpPoint getFocus(){ return currfocus; }
+    inline cgp::Point getFocus(){ return currfocus; }
 
     /// Start spinning the viewpoint
     void startSpin();
@@ -111,7 +111,7 @@ public:
     }
     
     /// Return the view vector from the center of projection to the focal point
-    inline Vector getDir()
+    inline cgp::Vector getDir()
     {
         updateDir();
         return dir;
@@ -126,8 +126,8 @@ public:
         zoomdist += (delta * viewscale / 100.0f);
         if(zoomdist < 0.5f * viewscale)
             zoomdist = 0.5f * viewscale;
-        if(zoomdist > 100.0f * viewscale)
-            zoomdist = 100.0f * viewscale;
+        if(zoomdist > 200.0f * viewscale)
+            zoomdist = 200.0f * viewscale;
         apply();
     }
 
@@ -137,9 +137,11 @@ public:
         return zoomdist;
     }
 
-    // resetLight, setLight: light position control methods
-    inline void resetLight(){ light = vpPoint(0.0f, 0.5f, 1.0f); };
-    inline void setLight(vpPoint p){ light = p; }
+    /// Reset light position to default
+    inline void resetLight(){ light = cgp::Point(0.0f, 0.5f, 1.0f); };
+
+    /// Set light position
+    inline void setLight(cgp::Point p){ light = p; }
 
     /// Begin rotation on button down
     void startArcRotate(float u, float v);
@@ -149,21 +151,21 @@ public:
 
     /// Find the ray starting at the viewing and intersecting the screen coordinates @a sx, @a sy.
     //                 Return the start position and direction vector @a dirn of the ray
-    void projectingRay(int sx, int sy, vpPoint & start, Vector & dirn);
+    void projectingRay(int sx, int sy, cgp::Point & start, cgp::Vector & dirn);
 
     /**
      * find the world coordinate position corresponding to screen space coordinates.
      * @param sx, sy    Screen space coordinates
      * @param[out] pnt  Screen space point but now in world coordinates
      */
-    void projectingPoint(int sx, int sy, vpPoint & pnt);
+    void projectingPoint(int sx, int sy, cgp::Point & pnt);
 
     /**
      * find the screen coordinate position corresponding to mouse input.
      * @param sx, sy    Screen space coordinates
      * @param[out] pnt  mouse point but now in screen coordinates
      */
-    void inscreenPoint(int sx, int sy, vpPoint & pnt);
+    void inscreenPoint(int sx, int sy, cgp::Point & pnt);
     
     /**
      * project a the pick intersection point to the closest point on the manipulator line
@@ -173,11 +175,11 @@ public:
      * @param mdirn     Direction of manipulator arm
      * @param[out] mpick    Pick point projected onto manipulator arm
      */
-    void projectOntoManip(vpPoint pick, vpPoint mpnt, Vector mdirn, vpPoint & mpick);
+    void projectOntoManip(cgp::Point pick, cgp::Point mpnt, cgp::Vector mdirn, cgp::Point & mpick);
     
     /// Find a position change vector in world coordinates @a del given a change
     ///              in screen coordinates from old position @a ox, @a oy to new position @a nx, @a ny
-    void projectMove(int ox, int oy, int nx, int ny, vpPoint cp, Vector & del);
+    void projectMove(int ox, int oy, int nx, int ny, cgp::Point cp, cgp::Vector & del);
     
     /// Retrieve composite model-view transformation
     glm::mat4x4 getMatrix();
@@ -200,9 +202,6 @@ public:
     /// Set the current OpenGL viewing state to accord with the stored viewing parameters
     ///          Note - this does not clear the current view.
     void apply();
-
-    /// Draw a vertical line through a pick point on the terrain to indicate the center of arcball rotation
-    // void drawPick(vpPoint p);
     
     /// Shift the focal point gradually over a number of frames. Returns true if their is an animated change in focus
     bool animate();

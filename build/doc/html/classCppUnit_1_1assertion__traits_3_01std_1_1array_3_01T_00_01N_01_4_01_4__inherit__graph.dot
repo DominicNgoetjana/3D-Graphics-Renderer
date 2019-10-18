@@ -1,0 +1,8 @@
+digraph "CppUnit::assertion_traits&lt; std::array&lt; T, N &gt; &gt;"
+{
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node0 [label="CppUnit::assertion\l_traits\< std::array\l\< T, N \> \>",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black"];
+  Node1 -> Node0 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="detail::AssertionTraitsEqual\l\< std::array\< T, N \> \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classdetail_1_1AssertionTraitsEqual_3_01std_1_1array_3_01T_00_01N_01_4_01_4.html"];
+}

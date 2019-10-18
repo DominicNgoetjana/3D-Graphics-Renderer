@@ -1,0 +1,10 @@
+digraph "Square"
+{
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node2 [label="Square",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black"];
+  Node3 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="BaseShape",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classBaseShape.html",tooltip="Abstract base class for shapes. "];
+  Node4 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" c" ,fontname="Helvetica"];
+  Node4 [label="cgp::Point",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classcgp_1_1Point.html"];
+}

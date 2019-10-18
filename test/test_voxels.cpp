@@ -7,16 +7,16 @@
 #include <stdio.h>
 #include <cstdint>
 #include <sstream>
+#include <stdlib.h>
+#include <time.h>
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/extensions/HelperMacros.h>
 
-const int resx = 1000;
-const int resy = 2050;
-const int resz = 3125;
+using namespace std;
 
 void TestVoxels::setUp()
 {
-    vox = new VoxelVolume(resx, resy, resz);
+    vox = new VoxelVolume();
 }
 
 void TestVoxels::tearDown()
@@ -24,112 +24,69 @@ void TestVoxels::tearDown()
     delete vox;
 }
 
-void TestVoxels::testDim()
+void TestVoxels::testVoxelSet()
 {
-    int dx, dy, dz, padx;
+    int v, i, j, k;
 
-    vox->getDim(dx, dy, dz);
-    // std::cerr << "dimx = " << dx << " dimy = " << dy << " dimz = " << dz << std::endl;
+    vox->setDim(1024, 1024, 1024); // typical large voxel volume
+    vox->setFrame(cgp::Point(0.0f, 0.0f, 0.0f), cgp::Vector(1.0f, 1.0f, 1.0f)); // unit cube
 
-    // round resx up to nearest unit of 32
-    padx = (int) ceil((float) resx / 32.0) * 32;
-    CPPUNIT_ASSERT(dx == padx);
-    CPPUNIT_ASSERT(dy == resy);
-    CPPUNIT_ASSERT(dz == resz);
+    srand (time(NULL));
+
+    // check fill at random positions
+    vox->fill(true);
+    for(v = 0; v < 10; v++)
+    {
+        // check random positions in voxel volume
+        CPPUNIT_ASSERT(vox->get(rand()%1024,rand()%1024,rand()%1024));
+    }
+
+    // check set and get for some corners and center
+    vox->fill(false);
+    vox->set(0,0,0,true);
+    vox->set(0,1023,1023,true);
+    vox->set(1023,1023,0,true);
+    vox->set(1023,0,1023,true);
+    vox->set(1023,1023,1023,true);
+    CPPUNIT_ASSERT(vox->get(0,0,0));
+    CPPUNIT_ASSERT(vox->get(0,1023,1023));
+    CPPUNIT_ASSERT(vox->get(1023,1023,0));
+    CPPUNIT_ASSERT(vox->get(1023,0,1023));
+    CPPUNIT_ASSERT(vox->get(1023,1023,1023));
+
+    // set and get outside volume bounds
+    CPPUNIT_ASSERT(!vox->set(-1,-1,-1,true));
+    CPPUNIT_ASSERT(!vox->set(1024,1024,1024,true));
+    CPPUNIT_ASSERT(!vox->get(-1,-1,-1));
+    CPPUNIT_ASSERT(!vox->get(1024,1024,1024));
+
+    // check and set random positions in the volume
+    vox->fill(true);
+    for(v = 0; v < 10; v++)
+    {
+        // check random positions in voxel volume
+        i = rand()%1024; j = rand()%1024; k = rand()%1024;
+        CPPUNIT_ASSERT(vox->set(i,j,k, false));
+        CPPUNIT_ASSERT(!vox->get(i,j,k));
+    }
+    cerr << "VOXEL CORRECTNESS PASSED" << endl;
 }
 
-void TestVoxels::testFill()
+void TestVoxels::testVoxelRegistration()
 {
-    int x, y, z, dx, dy, dz;
+    vox->setDim(1024, 1024, 1024); // typical large voxel volume
+    vox->setFrame(cgp::Point(0.0f, 0.0f, 0.0f), cgp::Vector(1.0f, 1.0f, 1.0f)); // unit cube
 
-    vox->getDim(dx, dy, dz);
-
-    // set all to empty and check
-    vox->fill(false);
-    for(z = 0; z < dz; z+=10)
-        for(y = 0; y < dy; y+=10)
-            for(x = 0; x < dx; x+=10)
-                CPPUNIT_ASSERT(!vox->get(x, y, z));
-
-    // set all to occupied and check
-    vox->fill(true);
-    for(z = 0; z < dz; z+=10)
-        for(y = 0; y < dy; y+=10)
-            for(x = 0; x < dx; x+=10)
-                CPPUNIT_ASSERT(vox->get(x, y, z));
-}
-
-void TestVoxels::testBounds()
-{
-    int dx, dy, dz;
-
-    vox->getDim(dx, dy, dz);
-
-    // set and test on before, on and after multiple of 32 boundary
-    vox->fill(false);
-    vox->set(31, 100, 300, true);
-    CPPUNIT_ASSERT(vox->get(31, 100, 300));
-    CPPUNIT_ASSERT(!vox->get(32, 100, 300));
-    CPPUNIT_ASSERT(!vox->get(32, 100, 300));
-    vox->fill(false);
-    vox->set(32, 100, 300, true);
-    CPPUNIT_ASSERT(!vox->get(31, 100, 300));
-    CPPUNIT_ASSERT(vox->get(32, 100, 300));
-    CPPUNIT_ASSERT(!vox->get(33, 100, 300));
-    vox->fill(false);
-    vox->set(33, 100, 300, true);
-    CPPUNIT_ASSERT(!vox->get(31, 100, 300));
-    CPPUNIT_ASSERT(!vox->get(32, 100, 300));
-    CPPUNIT_ASSERT(vox->get(33, 100, 300));
-
-    // also test inverse
-    vox->fill(true);
-    vox->set(31, 100, 300, false);
-    CPPUNIT_ASSERT(!vox->get(31, 100, 300));
-    CPPUNIT_ASSERT(vox->get(32, 100, 300));
-    CPPUNIT_ASSERT(vox->get(33, 100, 300));
-    vox->fill(true);
-    vox->set(32, 100, 300, false);
-    CPPUNIT_ASSERT(vox->get(31, 100, 300));
-    CPPUNIT_ASSERT(!vox->get(32, 100, 300));
-    CPPUNIT_ASSERT(vox->get(33, 100, 300));
-    vox->fill(true);
-    vox->set(33, 100, 300, false);
-    CPPUNIT_ASSERT(vox->get(31, 100, 300));
-    CPPUNIT_ASSERT(vox->get(32, 100, 300));
-    CPPUNIT_ASSERT(!vox->get(33, 100, 300));
-
-    // test setting on corners
-    vox->fill(false);
-    vox->set(0, 0, 0, true);
-    vox->set(dx-1, dy-1, dz-1, true);
-    vox->set(dx-1, 0, 0, true);
-    vox->set(0, dy-1, 0, true);
-    vox->set(0, 0, dz-1, true);
-    vox->set(dx-1, dy-1, 0, true);
-    vox->set(0, dy-1, dz-1, true);
-    vox->set(dx-1, 0, dz-1, true);
-
-    CPPUNIT_ASSERT(vox->get(0, 0, 0));
-    CPPUNIT_ASSERT(vox->get(dx-1, dy-1, dz-1));
-    CPPUNIT_ASSERT(vox->get(dx-1, 0, 0));
-    CPPUNIT_ASSERT(vox->get(0, dy-1, 0));
-    CPPUNIT_ASSERT(vox->get(0, 0, dz-1));
-    CPPUNIT_ASSERT(vox->get(dx-1, dy-1, 0));
-    CPPUNIT_ASSERT(vox->get(0, dy-1, dz-1));
-    CPPUNIT_ASSERT(vox->get(dx-1, 0, dz-1));
-
-    // check set on out of bounds
-    vox->fill(false);
-    CPPUNIT_ASSERT(!vox->set(-1, -1, -1, true));
-    CPPUNIT_ASSERT(!vox->set(dx, dy, dz, true));
-
-    // check get on out of bounds
-    CPPUNIT_ASSERT(!vox->get(-1, -1, -1));
-    CPPUNIT_ASSERT(!vox->get(dx, dy, dz));
-
+    // check some corner positions and center voxel
+    CPPUNIT_ASSERT(vox->getVoxelPos(0,0,0) == cgp::Point(0.0f, 0.0f, 0.0f));
+    CPPUNIT_ASSERT(vox->getVoxelPos(1023,0,0) == cgp::Point(1.0f, 0.0f, 0.0f));
+    CPPUNIT_ASSERT(vox->getVoxelPos(0,1023,0) == cgp::Point(0.0f, 1.0f, 0.0f));
+    CPPUNIT_ASSERT(vox->getVoxelPos(0,0,1023) == cgp::Point(0.0f, 0.0f, 1.0f));
+    CPPUNIT_ASSERT(vox->getVoxelPos(1023,1023,1023) == cgp::Point(1.0f, 1.0f, 1.0f));
+    CPPUNIT_ASSERT(vox->getVoxelPos(511,511,511) == cgp::Point(0.4995112f, 0.4995112f, 0.4995112f));
+    cerr << "VOXEL REGISTRATION PASSED" << endl << endl;
 }
 
 //#if 0 /* Disabled since it crashes the whole test suite */
-CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(TestVoxels, TestSet::perCommit());
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(TestVoxels, TestSet::perBuild());
 //#endif

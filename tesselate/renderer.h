@@ -11,12 +11,15 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <common/map.h>
+//#include <common/map.h>
 #include <common/debug_string.h>
 #include "shaderProgram.h"
 #include <QGLWidget>
 #include "shape.h"
 
+/**
+ * Class for managing OpenGL 3.2 rendering
+ */
 class Renderer
 {
 private:
@@ -34,20 +37,18 @@ private:
 
     bool shadersReady;              ///< have shaders been compiled/linked?
 
-    // OpenGL transformation/view matrices
-    glm::mat4x4 viewMx;
-    glm::mat4x4 MVmx;
-    glm::mat4x4 projMx;
-    glm::mat4x4 MVP;
-    glm::mat3x3 normalMatrix;
+    glm::mat4x4 viewMx, MVmx, projMx, MVP; ///< OpenGL transformation/view matrices
+    glm::mat3x3 normalMatrix;       ///< normal transformation matrix
 
     std::map<std::string, shaderProgram*> shaders;  ///< available shaders
     std::vector<ShapeDrawData> drawCallData;        ///< drawing state for scene shapes
 
 public:
 
+    /// constructor
     Renderer(QGLWidget *drawTo = NULL, const std::string &dir=".");
 
+    /// destructor
     ~Renderer();
 
     /**

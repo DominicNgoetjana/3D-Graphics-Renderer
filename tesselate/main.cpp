@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
     {
         QApplication app(argc, argv);
         Window * window = new Window();
-        window->getCamera().setForcedFocus(vpPoint(0.0f, 0.0f, 0.0f));
+        window->getCamera().setForcedFocus(cgp::Point(0.0f, 0.0f, 0.0f));
         window->resize(window->sizeHint());
 
         int desktopArea = QApplication::desktop()->width() *

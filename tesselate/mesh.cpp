@@ -3,6 +3,7 @@
 //
 
 #include "mesh.h"
+#define GLM_ENABLE_EXPERIMENTAL
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
@@ -12,14 +13,18 @@
 #include <list>
 #include <sys/stat.h>
 #include <glm/glm.hpp>
+#include <glm/gtx/intersect.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/rotate_vector.hpp>
-#include <glm/gtx/intersect.hpp>
+#include <unordered_map>
 
 using namespace std;
+using namespace cgp;
 
+//==========START BLOYD
 // source for table Marching Cubes Example Program by Cory Bloyd (corysama@yahoo.com)
+// http://paulbourke.net/geometry/polygonise/marchingsource.cpp
 // code is public domain
 
 //  For each of the possible vertex states listed in aiCubeEdgeFlags there is a specific triangulation
@@ -290,12 +295,25 @@ int triangleTable[256][16] =
     {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
 };
 
-GLfloat stdCol[] = {0.7f, 0.7f, 0.75f, 0.4f};
-const int raysamples = 5;
+//==========END BLOYD
 
-bool Sphere::pointInSphere(vpPoint pnt)
+GLfloat stdCol[] = {0.7f, 0.7f, 0.75f, 0.4f};
+const int raysamples = 1;
+
+void Sphere::genGeometry(ShapeGeometry * geom, View * view)
 {
-    Vector delvec;
+    glm::mat4 tfm, idt;
+    glm::vec3 trs;
+
+    idt = glm::mat4(1.0f); // identity matrix
+    trs = glm::vec3(c.x, c.y, c.z);
+    tfm = glm::translate(idt, trs);
+    geom->genSphere(r, 40, 40, tfm);
+}
+
+bool Sphere::pointContainment(cgp::Point pnt)
+{
+    cgp::Vector delvec;
 
     delvec.diff(c, pnt);
     if(delvec.sqrdlength() < r*r)
@@ -304,9 +322,136 @@ bool Sphere::pointInSphere(vpPoint pnt)
         return false;
 }
 
-bool Cylinder::pointInCylinder(vpPoint pnt)
+void Square::genGeometry(ShapeGeometry *geom, View *view)
 {
-    Vector dirvec;
+    // std::vector<cgp::Point> * points, std::vector<cgp::Vector> * norms, std::vector<int> * faces, glm::mat4x4 trm
+    glm::mat4 tfm, idt;
+    glm::vec3 trs;
+
+    Mesh * mesh = new Mesh ();
+
+    idt = glm::mat4(1.0f); // identity matrix
+    trs = glm::vec3(c.x, c.y, c.z);
+    tfm = glm::translate(idt, trs);
+
+    vector<cgp::Point> points;
+    vector<cgp::Vector> norms;
+    std::vector<int> faces;
+
+    /// cube points
+    /// front
+    points.push_back(cgp::Point(-1.0f, 1.0f, 1.0f));
+    points.push_back(cgp::Point(1.0f, 1.0f, 1.0f));
+    points.push_back(cgp::Point(1.0f, -1.0f, 1.0f));
+    points.push_back(cgp::Point(-1.0f, -1.0f, 1.0f));
+
+    /// left
+    points.push_back(cgp::Point(-1.0f, 1.0f, -1.0f));
+    points.push_back(cgp::Point(-1.0f, 1.0f, 1.0f));
+    points.push_back(cgp::Point(-1.0f, -1.0f, 1.0f));
+    points.push_back(cgp::Point(-1.0f, -1.0f, -1.0f));
+
+    /// back
+    points.push_back(cgp::Point(-1.0f, 1.0f, -1.0f));
+    points.push_back(cgp::Point(1.0f, 1.0f, -1.0f));
+    points.push_back(cgp::Point(1.0f, -1.0f, -1.0f));
+    points.push_back(cgp::Point(-1.0f, -1.0f, -1.0f));
+
+    /// right
+    points.push_back(cgp::Point(1.0f, 1.0f, 1.0f));
+    points.push_back(cgp::Point(1.0f, 1.0f, -1.0f));
+    points.push_back(cgp::Point(1.0f, -1.0f, -1.0f));
+    points.push_back(cgp::Point(1.0f, -1.0f, 1.0f));
+
+    /// top
+    points.push_back(cgp::Point(-1.0f, 1.0f, -1.0f));
+    points.push_back(cgp::Point(1.0f, 1.0f, -1.0f));
+    points.push_back(cgp::Point(1.0f, 1.0f, 1.0f));
+    points.push_back(cgp::Point(-1.0f, 1.0f, 1.0f));
+
+    /// bottom
+    points.push_back(cgp::Point(-1.0f, -1.0f, -1.0f));
+    points.push_back(cgp::Point(1.0f, -1.0f, -1.0f));
+    points.push_back(cgp::Point(1.0f, -1.0f, 1.0f));
+    points.push_back(cgp::Point(-1.0f, -1.0f, 1.0f));
+
+    /// normals
+    /// front
+    norms.push_back(cgp::Vector(0.0f, 0.0f, 1.0f));
+    /// left
+    norms.push_back(cgp::Vector(-1.0f, 0.0f, 0.0f));
+    /// back
+    norms.push_back(cgp::Vector(0.0f, 0.0f, -1.0f));
+    /// right
+    norms.push_back(cgp::Vector(1.0f, 0.0f, 0.0f));
+    /// top
+    norms.push_back(cgp::Vector(0.0f, 1.0f, 0.0f));
+    /// bottom
+    norms.push_back(cgp::Vector(0.0f, -1.0f, 0.0f));
+
+    mesh->setCubeTriangles();
+    geom->genMesh(&points, &norms, &faces, tfm);
+}
+
+bool Square::pointContainment(cgp::Point pnt)
+{
+    cgp::Vector delvec;
+
+    delvec.diff(c, pnt);
+    if(delvec.sqrdlength() < l*l*l)
+        return true;
+    else
+        return false;
+}
+
+void Cylinder::genGeometry(ShapeGeometry * geom, View * view)
+{
+    glm::mat4 tfm, idt;
+    glm::vec3 trs, rot;
+    Vector edgevec, zerovec, axisvec, zaxis;
+    float edgelen, aval;
+
+    edgevec.diff(s, e);
+    edgelen = edgevec.length();
+    edgevec.normalize();
+
+    // translate to starting vertex
+    idt = glm::mat4(1.0f);
+    trs = glm::vec3(s.x, s.y, s.z);
+    //trs = glm::vec3(0.0f, 0.0f, 0.0f);
+    tfm = glm::translate(idt, trs);
+
+    // determine rotation axis, normal to plane of z axis and edge vector
+    zaxis = Vector(0.0f, 0.0f, 1.0f);
+    axisvec.cross(zaxis, edgevec);
+    zerovec = Vector(0.0f, 0.0f, 0.0f);
+
+    // check for degenerate cases
+    if(axisvec == zerovec)
+    {
+        if(!(edgevec == zaxis)) // diametrically opposite
+        {
+            aval = 180.0f;
+            rot = glm::vec3(0.0f, 1.0f, 0.0f);
+            tfm = glm::rotate(tfm, aval, rot);
+        }
+        // otherwise aligned so no rotation
+    }
+    else
+    {
+        axisvec.normalize();
+        aval = acosf(zaxis.dot(edgevec)) * RAD2DEG;
+        rot = glm::vec3(axisvec.i, axisvec.j, axisvec.k);
+        tfm = glm::rotate(tfm, aval, rot);
+    }
+
+    // align to edge vector by rotation
+    geom->genCylinder(r, edgelen, 12, 4, tfm);
+}
+
+bool Cylinder::pointContainment(cgp::Point pnt)
+{
+    cgp::Vector dirvec;
     float dist, tval;
 
     // find distance and parameter value to closest point on the axis of the cylinder
@@ -318,7 +463,7 @@ bool Cylinder::pointInCylinder(vpPoint pnt)
         return false;
 }
 
-bool Mesh::findVert(vpPoint pnt, int &idx)
+bool Mesh::findVert(cgp::Point pnt, int &idx)
 {
     bool found = false;
     int i = 0;
@@ -337,36 +482,98 @@ bool Mesh::findVert(vpPoint pnt, int &idx)
     return found;
 }
 
-bool Mesh::findEdge(vector<Edge> edges, Edge e, int &idx)
+long Mesh::hashVert(cgp::Point pnt, cgp::BoundBox bbox)
 {
-    bool found = false;
-    int i = 0;
+    long x, y, z;
+    float range = 2500.0f;
+    long lrangesq, lrange = 2500;
 
-    idx = -1;
-    // linear search of edge list
-    while(!found && i < (int) edges.size())
+    lrangesq = lrange * lrange;
+
+    // discretise vertex within bounds of the enclosing bounding box
+    x = (long) (((pnt.x - bbox.min.x) * range) / bbox.diagLen()) * lrangesq;
+    y = (long) (((pnt.y - bbox.min.y) * range) / bbox.diagLen()) * lrange;
+    z = (long) (((pnt.z - bbox.min.z) * range) / bbox.diagLen());
+    return x+y+z;
+}
+
+long Mesh::hashEdge(int v0, int v1)
+{
+    long key = ((long) (v0+v1) * (long) (v0+v1+1)) / 2;
+    // use Cantor pairing function to derive a unique hash key function
+    if(v0 < v1)
+        key += (long) v1;
+    else
+        key += (long) v0;
+    return key;
+}
+
+void Mesh::mergeVerts()
+{
+    vector<cgp::Point> cleanverts;
+    long key;
+    int i, p, hitcount = 0;
+    // use hashmap to quickly look up vertices with the same coordinates
+    std::unordered_map<long, int> idxlookup; // key is concatenation of vertex position, value is index into the cleanverts vector
+    cgp::BoundBox bbox;
+
+    // construct a bounding box enclosing all vertices
+    for(i = 0; i < (int) verts.size(); i++)
+        bbox.includePnt(verts[i]);
+
+    // remove duplicate vertices
+    for(i = 0; i < (int) verts.size(); i++)
     {
-        if( (edges[i].v[0] == e.v[0] && edges[i].v[1] == e.v[1]) || (edges[i].v[1] == e.v[0] && edges[i].v[0] == e.v[1]) )
+        key = hashVert(verts[i], bbox);
+        if(idxlookup.find(key) == idxlookup.end()) // key not in map
         {
-            found = true;
-            idx = i;
+            idxlookup[key] = (int) cleanverts.size(); // put index in map for quick lookup
+            cleanverts.push_back(verts[i]);
         }
-        i++;
+        else
+        {
+            hitcount++;
+        }
     }
-    return found;
+
+    /*
+    cerr << "clean verts:" << endl;
+    for(i = 0; i < (int) cleanverts.size(); i++)
+        cerr << cleanverts[i].x << " " << cleanverts[i].y << " " << cleanverts[i].z << endl;*/
+    cerr << "num duplicate vertices found = " << hitcount << " of " << (int) verts.size() << endl;
+    cerr << "clean verts = " << (int) cleanverts.size() << endl;
+    cerr << "bbox min = " << bbox.min.x << ", " << bbox.min.y << ", " << bbox.min.z << endl;
+    cerr << "bbox max = " << bbox.max.x << ", " << bbox.max.y << ", " << bbox.max.z << endl;
+    cerr << "bbox diag = " << bbox.diagLen() << endl;
+
+
+    // re-index triangles
+    for(i = 0; i < (int) tris.size(); i++)
+        for(p = 0; p < 3; p++)
+        {
+            key = hashVert(verts[tris[i].v[p]], bbox);
+            if(idxlookup.find(key) != idxlookup.end())
+                tris[i].v[p] = idxlookup[key];
+            else
+                cerr << "Error Mesh::mergeVerts: vertex not found in map" << endl;
+
+        }
+
+    verts.clear();
+    verts = cleanverts;
 }
 
 void Mesh::deriveVertNorms()
 {
     vector<int> vinc; // number of faces incident on vertex
     int p, t;
-    Vector n;
+    cgp::Vector n;
 
     // init structures
     for(p = 0; p < (int) verts.size(); p++)
     {
         vinc.push_back(0);
-        norms.push_back(Vector(0.0f, 0.0f, 0.0f));
+        norms.push_back(cgp::Vector(0.0f, 0.0f, 0.0f));
     }
 
     // accumulate face normals into vertex normals
@@ -391,7 +598,7 @@ void Mesh::deriveVertNorms()
 void Mesh::deriveFaceNorms()
 {
     int t;
-    Vector evec[2];
+    cgp::Vector evec[2];
 
     for(t = 0; t < (int) tris.size(); t++)
     {
@@ -423,10 +630,10 @@ void Mesh::buildSphereAccel(int maxspheres)
     vector<Sphere> packedspheres;
     list<int> insphere;
     int i, v, p, t, s, numsx, numsy, numsz, sx, sy, sz, x, y, z, sind = 0;
-    vpPoint centroid, center;
-    Vector radvec, diag, edgevec;
+    cgp::Point centroid, center;
+    cgp::Vector radvec, diag, edgevec;
     float radius, dist, packrad, packspace, maxedge;
-    BoundBox bbox;
+    cgp::BoundBox bbox;
     Sphere sph;
     bool found;
 
@@ -474,7 +681,7 @@ void Mesh::buildSphereAccel(int maxspheres)
             for(y = 0; y < numsy; y++)
                 for(z = 0; z < numsz; z++)
                 {
-                    center = vpPoint((float) x * packspace + bbox.min.x, (float) y * packrad + bbox.min.y, (float) z * packrad + bbox.min.z);
+                    center = cgp::Point((float) x * packspace + bbox.min.x, (float) y * packrad + bbox.min.y, (float) z * packrad + bbox.min.z);
                     if(z%2==1) // row shifting alternates in layers
                     {
                         if(y%2 == 1) // shift alternating rows by half spacing in x
@@ -501,7 +708,7 @@ void Mesh::buildSphereAccel(int maxspheres)
             while(!found && s < (int) packedspheres.size())
             {
                 for(p = 0; p < 3; p++)
-                    if(packedspheres[s].pointInSphere(verts[tris[t].v[p]]))
+                    if(packedspheres[s].pointContainment(verts[tris[t].v[p]]))
                     {
                         found = true;
                         // add triangle to packedsphere
@@ -537,7 +744,7 @@ void Mesh::buildSphereAccel(int maxspheres)
                                     s = x * numsy * numsz + y * numsz + z; // flatten 3d index
                                     found = false;
                                     for(p = 0; p < 3; p++)
-                                        if(packedspheres[s].pointInSphere(verts[tris[t].v[p]]))
+                                        if(packedspheres[s].pointContainment(verts[tris[t].v[p]]))
                                             found = true;
                                     if(found) // add triangle to packedsphere
                                         packedspheres[s].ind.push_back(t);
@@ -570,7 +777,7 @@ void Mesh::buildSphereAccel(int maxspheres)
             insphere.unique();
 
             // calculate centroid as average of vertices
-            centroid = vpPoint(0.0f, 0.0f, 0.0f);
+            centroid = cgp::Point(0.0f, 0.0f, 0.0f);
             for (list<int>::iterator it=insphere.begin(); it!=insphere.end(); ++it)
             {
                 centroid.x += verts[(* it)].x; centroid.y += verts[(* it)].y; centroid.z += verts[(* it)].z;
@@ -591,14 +798,14 @@ void Mesh::buildSphereAccel(int maxspheres)
             boundspheres[i].r = radius;
 
             /*
-            // check current radius
-            for (list<int>::iterator it=insphere.begin(); it!=insphere.end(); ++it)
-            {
-                radvec.diff(boundspheres[i].c, verts[(* it)]);
-                dist = radvec.length();
-                if(dist > boundspheres[i].r)
-                    cerr << "Error Mesh::buildSphereAccel:vertex " << (* it) << " outside containing sphere by " << (dist - packrad) << endl;
-            }*/
+             // check current radius
+             for (list<int>::iterator it=insphere.begin(); it!=insphere.end(); ++it)
+             {
+             radvec.diff(boundspheres[i].c, verts[(* it)]);
+             dist = radvec.length();
+             if(dist > boundspheres[i].r)
+             cerr << "Error Mesh::buildSphereAccel:vertex " << (* it) << " outside containing sphere by " << (dist - packrad) << endl;
+             }*/
         }
     }
 }
@@ -608,7 +815,7 @@ Mesh::Mesh()
     col = stdCol;
     scale = 1.0f;
     xrot = yrot = zrot = 0.0f;
-    trx = Vector(0.0f, 0.0f, 0.0f);
+    trx = cgp::Vector(0.0f, 0.0f, 0.0f);
 }
 
 Mesh::~Mesh()
@@ -620,24 +827,18 @@ void Mesh::clear()
 {
     verts.clear();
     tris.clear();
-    geom.clear();
+    geometry.clear();
     col = stdCol;
     scale = 1.0f;
     xrot = yrot = zrot = 0.0f;
-    trx = Vector(0.0f, 0.0f, 0.0f);
-    for(int i = 0; i < (int) boundspheres.size(); i++)
-        boundspheres[i].ind.clear();
-    boundspheres.clear();
+    trx = cgp::Vector(0.0f, 0.0f, 0.0f);
 }
 
-bool Mesh::genGeometry(View * view, ShapeDrawData &sdd)
+void Mesh::genGeometry(ShapeGeometry * geom, View * view)
 {
     vector<int> faces;
     int t, p;
     glm::mat4x4 tfm;
-
-    geom.clear();
-    geom.setColour(col);
 
     // transform mesh data structures into a form suitable for rendering
     // by flattening the triangle list
@@ -647,41 +848,35 @@ bool Mesh::genGeometry(View * view, ShapeDrawData &sdd)
 
     // construct transformation matrix
     buildTransform(tfm);
-    geom.genMesh(&verts, &norms, &faces, tfm);
+    geom->genMesh(&verts, &norms, &faces, tfm);
+}
 
-    /*
-    // generate geometry for acceleration spheres for testing
-    for(p = 0; p < (int) boundspheres.size(); p++)
-    {
-        glm::mat4x4 idt;
-
-        idt = glm::mat4(1.0f);
-        tfm = glm::translate(idt, glm::vec3(trx.i+boundspheres[p].c.x, trx.j+boundspheres[p].c.y, trx.k+boundspheres[p].c.z));
-        tfm = glm::rotate(tfm, zrot, glm::vec3(0.0f, 0.0f, 1.0f));
-        tfm = glm::rotate(tfm, yrot, glm::vec3(0.0f, 1.0f, 0.0f));
-        tfm = glm::rotate(tfm, xrot, glm::vec3(1.0f, 0.0f, 0.0f));
-        tfm = glm::scale(tfm, glm::vec3(scale));
-        geom.genSphere(boundspheres[p].r, 20, 20, tfm);
-    }*/
+bool Mesh::bindGeometry(View * view, ShapeDrawData &sdd)
+{
+    geometry.clear();
+    geometry.setColour(col);
+    genGeometry(&geometry, view);
 
     // bind geometry to buffers and return drawing parameters, if possible
-    if(geom.bindBuffers(view))
+    if(geometry.bindBuffers(view))
     {
-        sdd = geom.getDrawParameters();
+        sdd = geometry.getDrawParameters();
         return true;
     }
     else
        return false;
 }
 
-bool Mesh::containedPoint(vpPoint pnt)
+bool Mesh::pointContainment(cgp::Point pnt)
 {
     int incount = 0, outcount = 0, hits, i, t, p, s;
-    glm::vec3 v[3], origin, xsect, ray;
+    glm::vec3 v[3], origin, ray;
+    glm::vec2 xsect;
+    float d;
     glm::mat4x4 tfm, idt;
-    glm::vec4 vproj;
-    vpPoint vert;
-    Vector dir;
+    glm::vec4 vxfm, cxfm;
+    cgp::Point vert, sphc;
+    cgp::Vector dir;
     float dist, tval;
     list<int> inspheres;
 
@@ -693,8 +888,11 @@ bool Mesh::containedPoint(vpPoint pnt)
     // construct transformation matrix
     buildTransform(tfm);
 
-    if(boundspheres.empty()) // no acceleration structure so build
-        buildSphereAccel(sphperdim);
+    if(sphereaccel)
+    {
+        if(boundspheres.empty()) // no acceleration structure so build
+            buildSphereAccel((int) sphperdim);
+    }
 
     for(i = 0; i < raysamples; i++)
     {
@@ -703,34 +901,63 @@ bool Mesh::containedPoint(vpPoint pnt)
 
         // sampling ray with random direction
         // avoid axis aligned rays because more likely to lead to numerical issues with axis aligned structures
-        dir = Vector((float) (rand()%1000-500), (float) (rand()%1000-500), (float) (rand()%1000-500));
+        dir = cgp::Vector((float) (rand()%1000-500), (float) (rand()%1000-500), (float) (rand()%1000-500));
         dir.normalize();
         ray = glm::vec3(dir.i, dir.j, dir.k);
 
-        // gather potential triangle intersector indices and remove duplicates
-        for(s = 0; s < (int) boundspheres.size(); s++)
+        if(sphereaccel)
         {
-            rayPointDist(pnt, dir, boundspheres[s].c, tval, dist);
-            if(dist <= boundspheres[s].r) // if ray hits the bounding sphere
-                for(t = 0; t < (int) boundspheres[s].ind.size(); t++) // include all triangles allocated to the bounding sphere
-                    inspheres.push_back(boundspheres[s].ind[t]);
-        }
-
-        // remove duplicate triangle indices because a triangle may appear in multiple bounding spheres
-        inspheres.sort();
-        inspheres.unique();
-
-        // test intersection against list of triangles
-        for (list<int>::iterator it=inspheres.begin(); it!=inspheres.end(); ++it)
-        {
-            for(p = 0; p < 3; p++)
+            // gather potential triangle intersector indices and remove duplicates
+            for(s = 0; s < (int) boundspheres.size(); s++)
             {
-                vert = verts[tris[(* it)].v[p]];
-                vproj = tfm * glm::vec4(vert.x, vert.y, vert.z, 1.0f);
-                v[p] = glm::vec3(vproj.x, vproj.y, vproj.z);
+                // sphere accel structure is in model space, so need to apply transform
+                cxfm = tfm * glm::vec4(boundspheres[s].c.x, boundspheres[s].c.y, boundspheres[s].c.z, 1.0f);
+                sphc = cgp::Point(cxfm.x, cxfm.y, cxfm.z);
+
+                rayPointDist(pnt, dir, sphc, tval, dist);
+                if(dist <= boundspheres[s].r) // if ray hits the bounding sphere
+                    for(t = 0; t < (int) boundspheres[s].ind.size(); t++) // include all triangles allocated to the bounding sphere
+                        inspheres.push_back(boundspheres[s].ind[t]);
             }
-            if(glm::intersectRayTriangle(origin, ray, v[0], v[1], v[2], xsect) || glm::intersectRayTriangle(origin, ray, v[0], v[2], v[1], xsect)) // test triangle in both windings because intersectLineTriangle is winding dependent
-                hits++;
+
+            // remove duplicate triangle indices because a triangle may appear in multiple bounding spheres
+            inspheres.sort();
+            inspheres.unique();
+
+            // test intersection against list of triangles
+            for (list<int>::iterator it=inspheres.begin(); it!=inspheres.end(); ++it)
+            {
+                for(p = 0; p < 3; p++)
+                {
+                    vert = verts[tris[(* it)].v[p]];
+                    // vxfm = tfm * glm::vec4(vert.x, vert.y, vert.z, 1.0f);
+                    vxfm = glm::vec4(vert.x, vert.y, vert.z, 1.0f);
+                    v[p] = glm::vec3(vxfm.x, vxfm.y, vxfm.z);
+                }
+                if(glm::intersectRayTriangle(origin, ray, v[0], v[1], v[2], xsect, d) || glm::intersectRayTriangle(origin, ray, v[0], v[2], v[1], xsect, d)) // test triangle in both windings because intersectLineTriangle is winding dependent
+                {
+                    hits++;
+                }
+            }
+        }
+        else // no acceleration structure so test against all triangles
+        {
+            for(t = 0; t < (int) tris.size(); t++)
+            {
+                for(p = 0; p < 3; p++)
+                {
+                    vert = verts[tris[t].v[p]];
+                    vxfm = tfm * glm::vec4(vert.x, vert.y, vert.z, 1.0f);
+                    v[p] = glm::vec3(vxfm.x, vxfm.y, vxfm.z);
+                }
+                ray[0] = 1.0f; ray[1] = 0.0f; ray[2] = 0.0f;
+                if(glm::intersectRayTriangle(origin, ray, v[0], v[1], v[2], xsect, d)) // || glm::intersectRayTriangle(origin, ray, v[0], v[2], v[1], xsect, d)) // test triangle in both windings because intersectLineTriangle is winding dependent
+                {
+                    if(d > 0.0f)
+                        hits++;
+                }
+
+            }
         }
 
         if(hits%2 == 0) // even number of intersection means point is outside
@@ -745,16 +972,17 @@ bool Mesh::containedPoint(vpPoint pnt)
 
 void Mesh::boxFit(float sidelen)
 {
-    vpPoint pnt;
-    Vector shift, diag, halfdiag;
+    cgp::Point pnt;
+    cgp::Vector shift, diag, halfdiag;
     float scale;
     int v;
-    BoundBox bbox;
+    cgp::BoundBox bbox;
 
     // calculate current bounding box
     for(v = 0; v < (int) verts.size(); v++)
         bbox.includePnt(verts[v]);
 
+    cerr << "numverts = " << (int) verts.size() << endl;
     if((int) verts.size() > 0)
     {
         // calculate translation necessary to move center of bounding box to the origin
@@ -764,51 +992,59 @@ void Mesh::boxFit(float sidelen)
         shift.add(halfdiag);
         shift.mult(-1.0f);
 
+        cerr << "shift = " << shift.i << " " << shift.j << " " << shift.k << endl;
+
         // scale so that largest side of bounding box fits sidelen
         scale = max(diag.i, diag.j); scale = max(scale, diag.k);
-        scale = sidelen / scale;
-
-        // shift center to origin and scale uniformly
-        for(v = 0; v < (int) verts.size(); v++)
+        cerr << " scale = " << scale << endl;
+        if(scale > 0.0f)
         {
-            pnt = verts[v];
-            shift.pntplusvec(pnt, &pnt);
-            pnt.x *= scale; pnt.y *= scale; pnt.z *= scale;
-            verts[v] = pnt;
-        }
+            scale = sidelen / scale;
 
-        buildSphereAccel(sphperdim);
+            // shift center to origin and scale uniformly
+            for(v = 0; v < (int) verts.size(); v++)
+            {
+                pnt = verts[v];
+                shift.pntplusvec(pnt, &pnt);
+                pnt.x *= scale; pnt.y *= scale; pnt.z *= scale;
+                verts[v] = pnt;
+                cerr << "pnt " << v << " = " << pnt.x << " " << pnt.y << " " << pnt.z << endl;
+            }
+        }
+        // buildSphereAccel((int) sphperdim);
     }
 }
 
-void Mesh::marchingCubes(VoxelVolume vox, float voxedgelen, Vector voxorigin)
+void Mesh::marchingCubes(VoxelVolume * vox)
 {
     int e, t, p, x, y, z, xdim, ydim, zdim, vcode, ecode, ex;
-    vpPoint edgeXsect[12]; // position of edge intersections
-    Vector celloff;
+    cgp::Point origin, edgeXsect[12]; // position of edge intersections
     Triangle tri;
+    cgp::Vector diag, celloff, voxedgelen, voxoffset, voxdiag;
 
-    vox.getDim(xdim, ydim, zdim);
+    vox->getDim(xdim, ydim, zdim);
+    vox->getFrame(origin, diag);
+    voxoffset = cgp::Vector(origin.x, origin.y, origin.z);
     clear();
+    voxedgelen = cgp::Vector(diag.i / (float) (xdim-1), diag.j / (float) (ydim-1), diag.k / (float) (zdim-1));
     for(x = 0; x < xdim-1; x++)
     {
         for(y = 0; y < ydim-1; y++)
             for(z = 0; z < zdim-1; z++)
             {
-                vcode = vox.getMCVertIdx(x, y, z);
-
-                ecode = vox.getMCEdgeIdx(vcode);
+                vcode = vox->getMCVertIdx(x, y, z);
+                ecode = vox->getMCEdgeIdx(vcode);
 
                 if(ecode != 0) // no triangles if no edges are intersected
                 {
                     for(e = 0; e < 12; e++) // transform edge intersection to correct position and scale
                         if(ecode & (1 << e))
                         {
-                            edgeXsect[e] = vox.getMCEdgeXsect(e);
+                            edgeXsect[e] = vox->getMCEdgeXsect(e);
                             // transform by scaling and translation to world coordinates
-                            edgeXsect[e].x *= voxedgelen; edgeXsect[e].y *= voxedgelen; edgeXsect[e].z *= voxedgelen;
-                            voxorigin.pntplusvec(edgeXsect[e], &edgeXsect[e]); // volume origin offset
-                            celloff = Vector((float) x * voxedgelen, (float) y * voxedgelen, (float) z * voxedgelen);
+                            edgeXsect[e].x *= voxedgelen.i; edgeXsect[e].y *= voxedgelen.j; edgeXsect[e].z *= voxedgelen.k;
+                            voxoffset.pntplusvec(edgeXsect[e], &edgeXsect[e]); // volume origin offset
+                            celloff = cgp::Vector((float) x * voxedgelen.i, (float) y * voxedgelen.j, (float) z * voxedgelen.k);
                             celloff.pntplusvec(edgeXsect[e], &edgeXsect[e]); // local cell offset
                         }
                     for(t = 0; t < 5; t++) // up to 5 triangles per cube
@@ -826,22 +1062,79 @@ void Mesh::marchingCubes(VoxelVolume vox, float voxedgelen, Vector voxorigin)
 
                 }
             }
-        if(x % 50 == 0)
-            cerr << "slices fin = " << x << endl;
     }
     // creates a triangle soup, with lots of duplicate vertices
+    mergeVerts(); // remove duplicate vertices
+    if(!basicValidity())
+        cerr << "Error Mesh::marchingCubes: Not valid after merging" << endl;
+
+    // laplacianSmooth(12, 0.3f);
     deriveFaceNorms();
     deriveVertNorms();
-    cerr << "face normals derived" << endl;
 
-    // remove vertex duplicates by writing to STL format and reading back in
-    // inefficient placeholder
-    /*
-    writeSTL("../tmp.stl");
-    cerr << "tmp.stl written" << endl;
-    readSTL("../tmp.stl");
-    cerr << "tmp.stl read" << endl;
-     */
+    // create base copy of mesh to support deformation
+    base.resize((int) verts.size());
+    for(int v = 0; v < (int) verts.size(); v++)
+        base[v] = verts[v];
+}
+
+void Mesh::laplacianSmooth(int iter, float rate)
+{
+    vector<vector<int>> adj;
+    vector<int> emptyadj;
+    vector<Vector> del;
+    float norm;
+    cgp::Vector delvec, adjvec;
+    int i, v, t, a, p;
+
+    // build an adjacency list for vertices
+    // assumes a two-manifold without boundary because it uses triangle winding to ensure that duplicate entries are not added
+    for(v = 0; v < (int) verts.size(); v++)
+        adj.push_back(emptyadj);
+    for(t = 0; t < (int) tris.size(); t++)
+        for(p = 0; p < 3; p++)
+            adj[tris[t].v[p]].push_back(tris[t].v[(p+1)%3]); // forward edge adjacency
+
+    for(i = 0; i < iter; i++)
+    {
+        del.clear();
+        for(v = 0; v < (int) verts.size(); v++)
+        {
+            delvec = Vector(0.0f, 0.0f, 0.0f);
+            // delvec = sum_j (x_j - x_i) / numadj
+            // new position relies on weighted sum of one ring neighbours of vertex
+            for(a = 0; a < (int) adj[v].size(); a++)
+            {
+                adjvec.diff(verts[v], verts[(adj[v])[a]]);
+                delvec.add(adjvec);
+            }
+            norm =  rate / (float) adj[v].size();
+            delvec.mult(norm);
+            del.push_back(delvec);
+        }
+
+        // apply Laplacian
+        for(v = 0; v < (int) verts.size(); v++)
+            del[v].pntplusvec(verts[v], &verts[v]);
+    }
+    deriveFaceNorms();
+    deriveVertNorms();
+
+    // create base copy of mesh to support deformation
+    base.resize((int) verts.size());
+    for(v = 0; v < (int) verts.size(); v++)
+        base[v] = verts[v];
+}
+
+void Mesh::applyFFD(ffd * lat)
+{
+    for(int v = 0; v < (int) verts.size(); v++)
+    {
+        verts[v] = base[v];
+        lat->deform(verts[v]);
+    }
+    deriveFaceNorms();
+    deriveVertNorms();
 }
 
 bool Mesh::readSTL(string filename)
@@ -850,9 +1143,10 @@ bool Mesh::readSTL(string filename)
 	char * inbuffer;
     struct stat results;
     int insize, inpos, numt, t, i;
-    vpPoint vpos;
+    cgp::Point vpos;
     Triangle tri;
 
+    // assumes binary format STL file
     infile.open((char *) filename.c_str(), ios_base::in | ios_base::binary);
 	if(infile.is_open())
 	{
@@ -891,20 +1185,16 @@ bool Mesh::readSTL(string filename)
             // normal
             if(inpos+12 >= insize){ cerr << "Error Mesh::readSTL: malformed stl file" << endl; return false; }
             // IEEE floating point 4-byte binary numerical representation, IEEE754, little endian
-            tri.n = Vector((* ((float *) &inbuffer[inpos])), (* ((float *) &inbuffer[inpos+4])), (* ((float *) &inbuffer[inpos+8])));
-            // cerr << "n = " << tri.n.i << ", " << tri.n.j << ", " << tri.n.k << endl;
+            tri.n = cgp::Vector((* ((float *) &inbuffer[inpos])), (* ((float *) &inbuffer[inpos+4])), (* ((float *) &inbuffer[inpos+8])));
             inpos += 12;
 
             // vertices
             for(i = 0; i < 3; i++)
             {
                 if(inpos+12 >= insize){ cerr << "Error Mesh::readSTL: malformed stl file" << endl; return false; }
-                vpos = vpPoint((* ((float *) &inbuffer[inpos])), (* ((float *) &inbuffer[inpos+4])), (* ((float *) &inbuffer[inpos+8])));
-                // if(!findVert(vpos, tri.v[i])) // new point not yet in vertex list, so add
-                // {
-                    tri.v[i] = (int) verts.size();
-                    verts.push_back(vpos);
-                // }
+                vpos = cgp::Point((* ((float *) &inbuffer[inpos])), (* ((float *) &inbuffer[inpos+4])), (* ((float *) &inbuffer[inpos+8])));
+                tri.v[i] = (int) verts.size();
+                verts.push_back(vpos);
                 inpos += 12;
             }
             tris.push_back(tri);
@@ -919,7 +1209,14 @@ bool Mesh::readSTL(string filename)
         cerr << "num vertices = " << (int) verts.size() << endl;
         cerr << "num triangles = " << (int) tris.size() << endl;
 
+        // STL provides a triangle soup so merge vertices that are coincident
+        mergeVerts();
+        // normal vectors at vertices are needed for rendering so derive from incident faces
         deriveVertNorms();
+        if(basicValidity())
+            cerr << "loaded file has basic validity" << endl;
+        else
+            cerr << "loaded file does not pass basic validity" << endl;
     }
     else
     {
@@ -941,7 +1238,7 @@ bool Mesh::writeSTL(string filename)
 	{
         outfile.write("File Generated by Tesselator. Binary STL", 80); // skippable header
         numt = (int) tris.size();
-        outfile.write((char *) &numt, 4);
+        outfile.write((char *) &numt, 4); // number of triangles
 
         for(t = 0; t < numt; t++)
         {
@@ -974,15 +1271,91 @@ bool Mesh::writeSTL(string filename)
     return true;
 }
 
+void Mesh::readGrid(vector<vector<vector<int>>> &voxelgrid, string filename, int len)
+{
+    ifstream infile;
+    infile.open(filename, ios::in);
+    string line;
+    //int oneCount = 0;
+    //vector<vector<vector<int>>> voxelgrid;
+    voxelgrid.resize(len);
+    //cout << "size of voxelgrid: " << voxelgrid.size() << endl;
+    for (int z = 0; z < len; z++) {
+        voxelgrid[z].resize(len);
+        //cout << "size of voxelgrid[" << z << "]: " << voxelgrid[z].size() << endl;
+        getline(infile, line);
+        //cout << "line: " << line;
+        for (int y = 0; y < len; y++) {
+            voxelgrid[z][y].resize(len);
+            for (int x = 0; x < len; x++) {
+                voxelgrid[x][y][z] = stoi(line.substr(x, 1));
+            }
+            if (y < (len-1))
+                line = line.substr(line.find(",")+1);
+        }
+    }
+    //outfile << finalGrid;
+
+    infile.close();
+}
+
+bool Mesh::writeGrid(vector<vector<vector<int>>> &voxelgrid, string outfilename, int len)
+{
+    ofstream outfile;
+    outfile.open(outfilename, ios::out);
+    string finalGrid = "";
+    for (int z = 0; z < len; z++) {
+
+        for (int y = 0; y < len; y++) {
+            for (int x = 0; x < len; x++)
+                finalGrid += to_string(voxelgrid[x][y][z]);
+            if (y < (len-1))
+                finalGrid += ",";
+        }
+        if (z < (len-1))
+            finalGrid += "\n";
+    }
+
+    outfile << finalGrid;
+
+    outfile.close();
+
+    return true;
+}
+
+void Mesh::mergeMesh(Mesh *m2, bool lastCall)
+{
+    // copy new verts and tris from m2 to this
+    verts.insert(verts.end(), m2->verts.begin(), m2->verts.end());
+    tris.insert(tris.end(), m2->tris.begin(), m2->tris.end());
+
+    if (lastCall)
+    {
+        mergeVerts();
+
+        for (vector<Triangle>::iterator iter = tris.begin(); iter != tris.end(); iter++) {
+            (*iter).printVec();
+        }
+    }
+}
+
 bool Mesh::basicValidity()
 {
-    int p;
-    bool valid = true, found = false;
+    int i, p, t, v;
     vector<bool> dangle;
-    int v = 0, vrest = 0, t = 0, trest = 0;
-    list<int> vlist, vrestlist;
+    long key;
+    // use hashmap to quickly look up vertices with the same coordinates
+    std::unordered_map<long, int> idxlookup; // key is concatenation of vertex position, value is index into the cleanverts vector
+    cgp::BoundBox bbox;
+    vector<cgp::Point> cleanverts;
 
     // search vertex list for duplicates
+    // duplicate vertices will not occur if MergeVerts has taken place
+
+    /*
+    // inefficient search of vertex list for duplicates - O(n^2)
+    int v = 0, vrest = 0;
+    bool found = false;
     while(!found && v < (int) verts.size()-1)
     {
         // search remainder of list
@@ -990,44 +1363,45 @@ bool Mesh::basicValidity()
         while(!found && vrest < (int) verts.size())
         {
             if(verts[v] == verts[vrest])
+            {
                 found = true;
+            }
             vrest++;
         }
         v++;
     }
-/*
-    // too inefficient, or possibly buggy
-    // search triangle list for duplicates
-    while(!found && t < (int) tris.size()-1)
-    {
-        // sorted list of triangle vertices
-        vlist.clear();
-        for(p = 0; p < 3; p++)
-            vlist.push_back(tris[t].v[p]);
-        vlist.sort();
-
-        // search remainder
-        trest = t+1;
-
-        while(!found && trest < (int) tris.size())
-        {
-            vrestlist.clear();
-            for(p = 0; p < 3; p++)
-                vrestlist.push_back(tris[trest].v[p]);
-            vrestlist.sort();
-            if(vlist == vrestlist)
-            {
-                found = true;
-            }
-            trest++;
-        }
-        t++;
-    }
-*/
     if(found)
+    {
+        cerr << "Error Mesh::basicValidity(): duplicate vertex found" << endl;
         return false;
+    }
+    */
 
-    // test for dangling vertices
+    // construct a bounding box enclosing all vertices
+    bbox.reset();
+    for(i = 0; i < (int) verts.size(); i++)
+        bbox.includePnt(verts[i]);
+
+    cleanverts.clear();
+
+    // search vertex list for duplicates using hash table
+    for(i = 0; i < (int) verts.size(); i++)
+    {
+        key = hashVert(verts[i], bbox);
+        if(idxlookup.find(key) == idxlookup.end()) // key not in map
+        {
+            idxlookup[key] = (int) cleanverts.size(); // put index in map for quick lookup
+            cleanverts.push_back(verts[i]);
+        }
+        else
+        {
+            cerr << "Error Mesh::basicValidity(): duplicate vertex found" << endl;
+            return false; // early out - exits on first duplicate encountered
+        }
+    }
+
+
+    // test for dangling vertices that do not belong to any triangles
     // build flag list corresponding to vertex list. Entry true if a vertex is dangling.
     for(v = 0; v < (int) verts.size(); v++)
         dangle.push_back(true);
@@ -1037,111 +1411,350 @@ bool Mesh::basicValidity()
         for(p = 0; p < 3; p++)
         {
             if(tris[t].v[p] >= 0 && tris[t].v[p] < (int) verts.size()) // check for in range at the same time
+            {
                 dangle[tris[t].v[p]] = false;
+            }
             else // vertex index out of bounds
-                valid = false;
+            {
+                cerr << "Error Mesh::basicValidity(): vertex index out of bounds" << endl;
+                return false; // early out
+            }
         }
 
     // check if any vertices are still flagged as dangling
     for(v = 0; v < (int) verts.size(); v++)
         if(dangle[v])
-            valid = false;
+        {
+            cerr << "Error Mesh::basicValidity(): dangling vertex found" << endl;
+            return false; // early out
+        }
 
-    return valid;
+    return true;
+}
+
+bool Mesh::sameTriangle(Triangle t1, Triangle t2)
+{
+    std::vector<int> ind1, ind2;
+
+    // a duplicate has the same set of vertices but they may be ordered differently
+    // so sort vertex indices of both triangles and then compare index by index
+    for(int i = 0; i < 3; i++)
+    {
+        ind1.push_back(t1.v[i]);
+        ind2.push_back(t2.v[i]);
+    }
+    std::sort(ind1.begin(), ind1.end());
+    std::sort(ind2.begin(), ind2.end());
+    return (ind1 == ind2);
+}
+
+bool Mesh::sameEdge(Edge e1, Edge e2, bool & opposite)
+{
+    if(e1.v[0] == e2.v[0] && e1.v[1] == e2.v[1])
+    {
+        opposite = false;
+        return true;
+    }
+    if(e1.v[0] == e2.v[1] && e1.v[1] == e2.v[0])
+    {
+        opposite = true;
+        return true;
+    }
+    return false;
 }
 
 bool Mesh::manifoldValidity()
 {
-    vector<Edge> edges;
-    vector<int> inccount; // count the number of triangles incident on the edge
-    int i, t, p;
-    Edge e;
+    std::unordered_multimap<long, int> trilookup; // key is sum of vertex indices, needs a multimap because this is not unique
+    long key;
+    int i, j, k, t, v, e, erest, mcount, ocount;
+    std::vector<std::vector<int>> incident;
+    std::vector<int> incempty;
+    std::vector<Edge> edges;
+    std::vector<bool> visited;
+    bool opposite, fin, found;
+    Edge edge1, edge2;
 
-    // every edge appears exactly twice in the triangle list
-    for(t = 0; t < (int) tris.size(); t++)
+    /*
+     // inefficient search of triangle list for duplicates - O(n^2)
+     int t = 0, trest = 0;
+     bool found = false;
+     while(!found && t < (int) tris.size()-1)
+     {
+     // search remainder of list
+     trest = t+1;
+     while(!found && trest < (int) tris.size())
+     {
+     if(sameTriangle(tris[t], tris[trest]))
+     {
+     found = true;
+     }
+     trest++;
+     }
+     t++;
+     }
+     if(found)
+     {
+     cerr << "Error Mesh::manifoldValidity(): duplicate triangle found" << endl;
+     return false;
+     }
+     */
+
+    // search triangle list for duplicates
+    // usual trick for more efficient version using hash table but this time keys map to multiple values
+    for(i = 0; i < (int) tris.size(); i++)
     {
-        for(p = 0; p < 3; p++)
+        key = (long) tris[i].v[0] + (long) tris[i].v[1] + (long) tris[i].v[2]; // use sum of vertex indices as the key, not unique but a good start
+        if(!(trilookup.find(key) == trilookup.end())) // key in map
         {
-            e.v[0] = tris[t].v[p];
-            e.v[1] = tris[t].v[(p+1)%3];
-            if(findEdge(edges, e, i)) // if edge already exists then increment incidence count
+            // cerr << "possible dup" << endl;
+            // iterate over triangles with the same key to see if any are duplicates
+            auto range = trilookup.equal_range(key);
+            for(auto it = range.first; it != range.second; it++) // now check if each truly is a duplicate, by looking at all values with the same key
             {
-                inccount[i]++;
+                // cerr << tris[i].v[0] << " " << tris[i].v[1] << " " << tris[i].v[2] << " ?= " << tris[it->second].v[0] << " " << tris[it->second].v[1] << " " << tris[it->second].v[2] << endl;
+                if(sameTriangle(tris[i], tris[it->second]))
+                {
+                    cerr << "Error Mesh::manifoldValidity(): duplicate triangle found" << endl;
+                    return false; // early out - exits on first duplicate encountered
+                }
             }
-            else // otherwise create edge and counting entry
+        }
+        trilookup.emplace(key, i); // add triangle index to multimap
+    }
+
+    // make sure every edge appears exactly twice in triangle list, with edges traversed in different directions
+    // build list of triangles incident on each vertex - single pass over tris list
+    for(v = 0; v < (int) verts.size(); v++)
+        incident.push_back(incempty);
+    for(t = 0; t < (int) tris.size(); t++)
+        for(i = 0; i < 3; i++)
+            incident[tris[t].v[i]].push_back(t);
+
+    // make sure edges match up around each vertex. Each edge is shared by two triangles with opposite directions - single pass over incident list
+    for(i = 0; i < (int) incident.size(); i++)
+    {
+
+        // note: this edge counting approach does not pick up cases where two surfaces touch at a single vertex
+        edges.clear();
+        // gather incident edges
+        for(j = 0; j < (int) incident[i].size(); j++)
+        {
+            t = (incident[i])[j]; // index of incident triangle
+            for(k = 0; k < 3; k++) // gather edges incident on vertex
             {
-                edges.push_back(e);
-                inccount.push_back(1);
+                if(tris[t].v[k] == i) // vertex for incidence, gather edge before and after
+                {
+                    edge1.v[0] = i; edge1.v[1] = tris[t].v[(k+1)%3]; // outgoing edge
+                    edges.push_back(edge1);
+
+                    // incoming edge
+                    edge2.v[0] = tris[t].v[(k+2)%3]; edge2.v[1] = i; // incoming edge
+                    edges.push_back(edge2);
+                }
+            }
+        }
+
+        // compare edges - O(n^2) but small n
+        for(e = 0; e < (int) edges.size(); e++)
+        {
+            mcount = 0; ocount = 0;
+            for(erest = 0; erest < (int) edges.size(); erest++)
+            {
+                if(e != erest)
+                    if(sameEdge(edges[e], edges[erest], opposite))
+                    {
+                        if(opposite)
+                            ocount++;
+                        else
+                            mcount++;
+                    }
+            }
+            if(ocount != 1 || mcount != 0) // only one matching edge wound oppositely
+            {
+                cerr << "Error Mesh::manifoldValidity(): edges do not have exactly two incident triangles correctly wound" << endl;
+                return false;
+            }
+        }
+
+        // check for reachability - there should only be a single cycle around a vertex
+        // more efficient if this was combined with the previous loop but less readable
+        visited.clear(); visited.resize((int) incident[i].size(), false);
+        e = 0; visited[0] = true; fin = false;
+        while(!fin)
+        {
+            // find adjacent triangle to outgoing edge using incident edge table
+            found = false; erest = 0;
+            while(!found && erest < (int) edges.size())
+            {
+                if(e != erest)
+                    if(sameEdge(edges[e], edges[erest], opposite))
+                    {
+                        found = true;
+                        e = erest;
+
+                        // check if triangle is already visited
+                        if(visited[e/2])
+                            fin = true;
+                        else
+                            visited[e/2] = true;
+
+                        if(e % 2 == 0) // find outgoing edge, come in pairs
+                            e++;
+                        else
+                            e--;
+                    }
+                erest++;
+            }
+        }
+
+        for(j = 0; j < (int) incident[i].size(); j++)
+        {
+            if(!visited[j])
+            {
+                cerr << "Error Mesh::manifoldValidity(): vertices do note have a single cycle of incident triangles" << endl;
+                return false;
             }
         }
     }
 
-    for(i = 0; i < (int) edges.size(); i++)
-        if(inccount[i] != 2)
-        {
-            return false;
-        }
+    // For true 2-manifold validity it would also be necessary to see if the object is self-intersecting by testing triangles against
+    // each other for intersection. This would require a spatial data structure such as a bounding sphere hierarchy to accelerate properly
+    // which is beyond the scope of this assignment
     return true;
 }
 
-bool Mesh::connectionValidity()
+void Mesh::validTetTest()
 {
-    /*
-    vector<bool> visited;
-    stack<int> traverse;
-    int v, t, currt, currv;
-    bool valid = true;
+    Triangle t;
 
-    // build flag list corresponding to vertex list. Entry true if a vertex has been visited during traversal.
-    for(v = 0; v < (int) verts.size(); v++)
-        visited.push_back(false);
+    clear();
+
+    // base
+    verts.push_back(cgp::Point(0.0f, 0.0f, 0.0f));
+    verts.push_back(cgp::Point(1.0f, 0.0f, 0.0f));
+    verts.push_back(cgp::Point(1.0f, 0.0f, 1.0f));
+
+    // apex
+    verts.push_back(cgp::Point(0.0f, 1.0f, 0.0f));
+
+    // 4 triangles in tetrahedron
+    t.v[0] = 0; t.v[1] = 1; t.v[2] = 2;    // base triangle 0-1-2
+    tris.push_back(t);
+    t.v[0] = 1; t.v[1] = 0; t.v[2] = 3;    // side triangle 1-0-3
+    tris.push_back(t);
+    t.v[0] = 2; t.v[1] = 1; t.v[2] = 3;    // side triangle 2-1-3
+    tris.push_back(t);
+    t.v[0] = 0; t.v[1] = 2; t.v[2] = 3;    // side triangle 0-2-3
+    tris.push_back(t);
+}
+
+void Mesh::openTetTest()
+{
+    Triangle t;
+
+    clear();
+
+    // base
+    verts.push_back(cgp::Point(0.0f, 0.0f, 0.0f));
+    verts.push_back(cgp::Point(1.0f, 0.0f, 0.0f));
+    verts.push_back(cgp::Point(1.0f, 0.0f, 1.0f));
+
+    // apex
+    verts.push_back(cgp::Point(0.0f, 1.0f, 0.0f));
+
+    // 4 triangles in tetrahedron
+    t.v[0] = 0; t.v[1] = 1; t.v[2] = 2;    // base triangle 0-1-2
+    tris.push_back(t);
+    t.v[0] = 1; t.v[1] = 0; t.v[2] = 3;    // side triangle 1-0-3
+    tris.push_back(t);
+    t.v[0] = 2; t.v[1] = 1; t.v[2] = 3;    // side triangle 2-1-3
+    tris.push_back(t);
+    // closing side triangle missing
+}
+
+void Mesh::touchTetsTest()
+{
+    Triangle t;
+
+    clear();
+
+    // base
+    verts.push_back(cgp::Point(0.0f, 0.0f, 0.0f));
+    verts.push_back(cgp::Point(1.0f, 0.0f, 0.0f));
+    verts.push_back(cgp::Point(1.0f, 0.0f, 1.0f));
+
+    // apex
+    verts.push_back(cgp::Point(0.0f, 1.0f, 0.0f));
+
+    // upper base of inverted tet
+    verts.push_back(cgp::Point(0.0f, 2.0f, 0.0f));
+    verts.push_back(cgp::Point(1.0f, 2.0f, 0.0f));
+    verts.push_back(cgp::Point(1.0f, 2.0f, 1.0f));
+
+    // 4 triangles in lower tetrahedron
+    t.v[0] = 0; t.v[1] = 1; t.v[2] = 2;    // base triangle 0-1-2
+    tris.push_back(t);
+    t.v[0] = 1; t.v[1] = 0; t.v[2] = 3;    // side triangle 1-0-3
+    tris.push_back(t);
+    t.v[0] = 2; t.v[1] = 1; t.v[2] = 3;    // side triangle 2-1-3
+    tris.push_back(t);
+    t.v[0] = 0; t.v[1] = 2; t.v[2] = 3;    // side triangle 0-2-3
+    tris.push_back(t);
+
+    // 4 triangles in upper tetrahedron
+    t.v[0] = 6; t.v[1] = 5; t.v[2] = 4;    // base triangle 6-5-4
+    tris.push_back(t);
+    t.v[0] = 4; t.v[1] = 5; t.v[2] = 3;    // side triangle 4-5-3
+    tris.push_back(t);
+    t.v[0] = 5; t.v[1] = 6; t.v[2] = 3;    // side triangle 5-6-3
+    tris.push_back(t);
+    t.v[0] = 6; t.v[1] = 4; t.v[2] = 3;    // side triangle 6-4-3
+    tris.push_back(t);
+
+}
+
+void Mesh::overlapTetTest()
+{
+    Triangle t;
+
+    clear();
+
+    // base
+    verts.push_back(cgp::Point(0.0f, 0.0f, 0.0f));
+    verts.push_back(cgp::Point(1.0f, 0.0f, 0.0f));
+    verts.push_back(cgp::Point(1.0f, 0.0f, 1.0f));
+
+    // apex
+    verts.push_back(cgp::Point(0.0f, 1.0f, 0.0f));
+
+    // 4 triangles in tetrahedron
+    t.v[0] = 0; t.v[1] = 1; t.v[2] = 2;    // base triangle 0-1-2
+    tris.push_back(t);
+    tris.push_back(t);
+    t.v[0] = 1; t.v[1] = 0; t.v[2] = 3;    // side triangle 1-0-3
+    tris.push_back(t);
+    tris.push_back(t);
+    t.v[0] = 2; t.v[1] = 1; t.v[2] = 3;    // side triangle 2-1-3
+    tris.push_back(t);
+    tris.push_back(t);
+    t.v[0] = 0; t.v[1] = 2; t.v[2] = 3;    // side triangle 0-2-3
+    tris.push_back(t);
+    tris.push_back(t);
+}
 
 
-    // build an incident triangle  structure
+void Mesh::basicBreakTest()
+{
+    Triangle t;
 
-    // depth first traversal of incident triangles
-    traverse.push(0); visited[tris[0].v[0]] = true;
-    while(!traverse.empty())
-    {
-        currt = traverse.top();
-        traverse.pop();
+    clear();
 
-        // find which vertex of the triangle has yet to be visited (if any)
-        currv = -1;
-        if(!visited[edges[curre].v[0]])
-            currv = edges[curre].v[0];
-        else if(!visited[edges[curre].v[1]])
-            currv = edges[curre].v[1];
+    // duplicated dangling vertex at origin
+    verts.push_back(cgp::Point(0.0f, 0.0f, 0.0f));
+    verts.push_back(cgp::Point(0.0f, 0.0f, 0.0f));
 
-        if(currv >= 0)
-        {
-            visited[currv] = true;
-
-            // find all triangles incident on the unvisited endpoint
-            // slow because there is no incident triangle list in the scene
-            for(t = 0; t < (int) incident[currv].size(); t++)
-                if(e != curre)
-                {
-                    if(edges[e].v[0] == currv) // incident on current vertex
-                    {
-                        if(!visited[edges[e].v[1]]) // check to see if far vertex is unvisited
-                            traverse.push(e);
-                    }
-                    else if(edges[e].v[1] == currv)
-                    {
-                        if(!visited[edges[e].v[0]]) // check to see if far vertex is unvisited
-                            traverse.push(e);
-                    }
-                }
-        }
-    }
-
-    // check if any vertices are still unvisited
-    for(v = 0; v < (int) verts.size(); v++)
-    {
-        if(!visited[v])
-            valid = false;
-    }
-    return valid;*/
-    return true;
+    // single triangle pointing to non-existent vertices
+    t.v[0] = 2; t.v[1] = 3; t.v[2] = 4;
+    tris.push_back(t);
 }

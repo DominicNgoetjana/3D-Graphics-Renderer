@@ -1,12 +1,9 @@
-// constraint.cpp: various user generated constraints for ultimate terrain synthesis
-// author: James Gain
-// date: 5 November 2013
-//       21 January 2013 - curve constraints
-
-#include <glew.h>
+#include <GL/glew.h>
 #include "shape.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+using namespace cgp;
 
 void ShapeGeometry::setColour(GLfloat * col)
 {
@@ -41,8 +38,9 @@ void ShapeGeometry::genCylinder(float radius, float height, int slices, int stac
 
             // apply transformation
             p = trm * glm::vec4(x, y, h, 1.0f);
-            v = glm::transpose(glm::inverse(glm::mat3(trm))) * glm::normalize(glm::vec3(x, y, 0.0f));
-            v = glm::normalize(v);
+            //v = glm::transpose(glm::inverse(glm::mat3(trm))) * glm::normalize(glm::vec3(x, y, 0.0f));
+            //v = glm::normalize(v);
+            v = glm::mat3(trm) * glm::normalize(glm::vec3(x, y, 0.0f));
 
             verts.push_back(p.x); verts.push_back(p.y); verts.push_back(p.z); // position
             verts.push_back(0.0f); verts.push_back(0.0f); // texture coordinates
@@ -126,12 +124,13 @@ void ShapeGeometry::genSphere(float radius, int slices, int stacks, glm::mat4x4 
     }
 }
 
-void ShapeGeometry::genMesh(std::vector<vpPoint> * points, std::vector<Vector> * norms, std::vector<int> * faces, glm::mat4x4 trm)
+void ShapeGeometry::genMesh(std::vector<cgp::Point> * points, std::vector<cgp::Vector> * norms, std::vector<int> * faces, glm::mat4x4 trm)
 {
-    int i;
+    int i, base;
     glm::vec4 p;
     glm::vec3 v;
 
+    base = int(verts.size()) / 8;
     for(i = 0; i < (int) points->size(); i++)
     {
         // apply transformation
@@ -148,7 +147,7 @@ void ShapeGeometry::genMesh(std::vector<vpPoint> * points, std::vector<Vector> *
 
     for(i = 0; i < (int) faces->size(); i++)
     {
-        indices.push_back((* faces)[i]);
+        indices.push_back((* faces)[i]+base);
     }
 }
 

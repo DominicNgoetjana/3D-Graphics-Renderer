@@ -9,15 +9,16 @@ if (BUILD_GUI)
        shape.cpp
        vecpnt.cpp
        view.cpp
-       voxels.cpp
+       ffd.cpp
        mesh.cpp
-       scene.cpp
+       voxels.cpp
+       csg.cpp
        window.cpp
        shaderProgram.cpp
        renderer.cpp)
 
     add_library(tess ${GUI_SOURCES})
-    target_link_libraries(tess clh common
+    target_link_libraries(tess common
         ${Qt5Widgets_LIBRARIES} ${Qt5OpenGL_LIBRARIES}
         ${GLUT_LIBRARIES} ${GLEW_LIBRARIES} ${OPENGL_LIBRARIES} ${Boost_PROGRAM_OPTIONS_LIBRARY})
 

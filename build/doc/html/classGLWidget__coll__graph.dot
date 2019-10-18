@@ -1,0 +1,42 @@
+digraph "GLWidget"
+{
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node2 [label="GLWidget",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black"];
+  Node3 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="QGLWidget",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled"];
+  Node4 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" renderer" ,fontname="Helvetica"];
+  Node4 [label="Renderer",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classRenderer.html",tooltip="Class for managing OpenGL 3.2 rendering. "];
+  Node5 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" view" ,fontname="Helvetica"];
+  Node5 [label="View",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classView.html",tooltip="Information structure for view control. "];
+  Node6 -> Node5 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" dir" ,fontname="Helvetica"];
+  Node6 [label="cgp::Vector",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classcgp_1_1Vector.html"];
+  Node7 -> Node5 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" focus\nprevfocus\ncurrfocus\ncop\nlight" ,fontname="Helvetica"];
+  Node7 [label="cgp::Point",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classcgp_1_1Point.html"];
+  Node8 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" scene" ,fontname="Helvetica"];
+  Node8 [label="Scene",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classScene.html",tooltip="CSG Tree that can be evaluated to produce a volumetric representation. "];
+  Node9 -> Node8 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" geom" ,fontname="Helvetica"];
+  Node9 [label="ShapeGeometry",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classShapeGeometry.html",tooltip="Geometry in a format suitable for OpenGL. "];
+  Node6 -> Node8 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" voldiag" ,fontname="Helvetica"];
+  Node10 -> Node8 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" finalMesh" ,fontname="Helvetica"];
+  Node10 [label="ShapeNode",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classShapeNode.html",tooltip="Inherited class for leaf csg tree shape nodes. "];
+  Node11 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="SceneNode",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classSceneNode.html",tooltip="Base class for csg tree nodes. "];
+  Node12 -> Node10 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" shape" ,fontname="Helvetica"];
+  Node12 [label="BaseShape",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classBaseShape.html",tooltip="Abstract base class for shapes. "];
+  Node13 -> Node8 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" vox" ,fontname="Helvetica"];
+  Node13 [label="VoxelVolume",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classVoxelVolume.html",tooltip="A cuboid volume regularly subdivided into uniformly sized cubes (voxels). "];
+  Node6 -> Node13 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" diagonal\ncell" ,fontname="Helvetica"];
+  Node7 -> Node13 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" origin" ,fontname="Helvetica"];
+  Node14 -> Node8 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" voxmesh\naccCube" ,fontname="Helvetica"];
+  Node14 [label="Mesh",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classMesh.html",tooltip="A triangle mesh in 3D space. "];
+  Node12 -> Node14 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 -> Node14 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" geometry" ,fontname="Helvetica"];
+  Node6 -> Node14 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" trx" ,fontname="Helvetica"];
+  Node11 -> Node8 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" csgroot" ,fontname="Helvetica"];
+  Node15 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" def" ,fontname="Helvetica"];
+  Node15 [label="ffd",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classffd.html",tooltip="Free-Form Deformation of geometric models. "];
+  Node9 -> Node15 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" activegeom\ngeom" ,fontname="Helvetica"];
+  Node6 -> Node15 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" diagonal" ,fontname="Helvetica"];
+  Node7 -> Node15 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" origin\ncp" ,fontname="Helvetica"];
+}

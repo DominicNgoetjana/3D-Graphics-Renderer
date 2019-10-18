@@ -1,0 +1,14 @@
+digraph "TestVoxels"
+{
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node2 [label="TestVoxels",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black"];
+  Node3 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="TestFixture",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled"];
+  Node4 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" vox" ,fontname="Helvetica"];
+  Node4 [label="VoxelVolume",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classVoxelVolume.html",tooltip="A cuboid volume regularly subdivided into uniformly sized cubes (voxels). "];
+  Node5 -> Node4 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" diagonal\ncell" ,fontname="Helvetica"];
+  Node5 [label="cgp::Vector",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classcgp_1_1Vector.html"];
+  Node6 -> Node4 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" origin" ,fontname="Helvetica"];
+  Node6 [label="cgp::Point",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classcgp_1_1Point.html"];
+}

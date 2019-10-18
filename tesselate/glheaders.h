@@ -1,8 +1,6 @@
 #ifndef GLHEADERS_H_
 #define GLHEADERS_H_
 
-//#include <glew.h>
-
 #define GL3_PROTOTYPES
 #include <GL/gl3.h>
 #include <GL/glu.h>

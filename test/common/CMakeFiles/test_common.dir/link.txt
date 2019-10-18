@@ -1,2 +1,0 @@
-/usr/bin/ar cr libtest_common.a  CMakeFiles/test_common.dir/test_map.cpp.o CMakeFiles/test_common.dir/test_map_rgba.cpp.o CMakeFiles/test_common.dir/test_mathutils.cpp.o CMakeFiles/test_common.dir/test_region.cpp.o
-/usr/bin/ranlib libtest_common.a

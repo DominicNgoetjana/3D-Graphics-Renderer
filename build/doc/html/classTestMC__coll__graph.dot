@@ -1,0 +1,31 @@
+digraph "TestMC"
+{
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node2 [label="TestMC",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black"];
+  Node3 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="TestFixture",height=0.2,width=0.4,color="grey75", fillcolor="white", style="filled"];
+  Node4 -> Node2 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" csg" ,fontname="Helvetica"];
+  Node4 [label="Scene",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classScene.html",tooltip="CSG Tree that can be evaluated to produce a volumetric representation. "];
+  Node5 -> Node4 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" geom" ,fontname="Helvetica"];
+  Node5 [label="ShapeGeometry",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classShapeGeometry.html",tooltip="Geometry in a format suitable for OpenGL. "];
+  Node6 -> Node4 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" voldiag" ,fontname="Helvetica"];
+  Node6 [label="cgp::Vector",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classcgp_1_1Vector.html"];
+  Node7 -> Node4 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" finalMesh" ,fontname="Helvetica"];
+  Node7 [label="ShapeNode",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classShapeNode.html",tooltip="Inherited class for leaf csg tree shape nodes. "];
+  Node8 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="SceneNode",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classSceneNode.html",tooltip="Base class for csg tree nodes. "];
+  Node9 -> Node7 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" shape" ,fontname="Helvetica"];
+  Node9 [label="BaseShape",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classBaseShape.html",tooltip="Abstract base class for shapes. "];
+  Node10 -> Node4 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" vox" ,fontname="Helvetica"];
+  Node10 [label="VoxelVolume",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classVoxelVolume.html",tooltip="A cuboid volume regularly subdivided into uniformly sized cubes (voxels). "];
+  Node6 -> Node10 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" diagonal\ncell" ,fontname="Helvetica"];
+  Node11 -> Node10 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" origin" ,fontname="Helvetica"];
+  Node11 [label="cgp::Point",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classcgp_1_1Point.html"];
+  Node12 -> Node4 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" voxmesh\naccCube" ,fontname="Helvetica"];
+  Node12 [label="Mesh",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classMesh.html",tooltip="A triangle mesh in 3D space. "];
+  Node9 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 -> Node12 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" geometry" ,fontname="Helvetica"];
+  Node6 -> Node12 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" trx" ,fontname="Helvetica"];
+  Node8 -> Node4 [dir="back",color="darkorchid3",fontsize="10",style="dashed",label=" csgroot" ,fontname="Helvetica"];
+}

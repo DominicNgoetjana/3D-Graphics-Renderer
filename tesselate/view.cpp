@@ -1,10 +1,3 @@
-/* file: view.cpp
-   author: (c) James Gain, 2006
-   project: ScapeSketch - sketch-based design of procedural landscapes
-   notes: controlling viewpoint changes to support terrain sketching
-   changes:
-*/
-
 #include "view.h"
 
 #include <stdio.h>
@@ -16,6 +9,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 using namespace std;
+using namespace cgp;
 
 // #define VIEW_ASPECT 1.6
 #define VIEW_ASPECT 1.333333
@@ -78,12 +72,12 @@ void axis_to_quat(float a[3], float phi, float q[4]);
 // END : Code from SGI
 // ---------------------------------------------
 
-void View::setAnimFocus(vpPoint pnt)
+void View::setAnimFocus(cgp::Point pnt)
 {
     prevfocus = focus; currfocus = focus; focalstep = 20; focus = pnt;
 }
 
-void View::setForcedFocus(vpPoint pnt)
+void View::setForcedFocus(cgp::Point pnt)
 {
     prevfocus = pnt; currfocus = pnt; focalstep = 0; focus = pnt;
 }
@@ -91,13 +85,12 @@ void View::setForcedFocus(vpPoint pnt)
 void View::startSpin()
 {
     focalstep = (int) spinsteps;
-    time.start();
 }
 
 void View::updateDir()
 {
-    Vector copdir;
-    vpPoint origin = vpPoint(0.0f, 0.0f, 0.0f);
+    cgp::Vector copdir;
+    cgp::Point origin = cgp::Point(0.0f, 0.0f, 0.0f);
 
     float m[4][4];
     float _x = 0.0f, _y = 0.0f, _z = 1.0f;
@@ -129,13 +122,13 @@ void View::arcRotate (float u, float v)
     updateDir();
 }
 
-void View::projectingRay(int sx, int sy, vpPoint & start, Vector & dirn)
+void View::projectingRay(int sx, int sy, cgp::Point & start, cgp::Vector & dirn)
 {
     // opengl3.2 with glm
     glm::vec3 wrld, win;
     glm::vec4 viewport;
     int realx, realy;
-    vpPoint pnt = vpPoint(0.0f, 0.0f, 0.0f);
+    cgp::Point pnt = cgp::Point(0.0f, 0.0f, 0.0f);
 
     // unproject screen point to derive world coordinates
     realy = height + 2.0f * starty - sy; realx = sx;
@@ -143,7 +136,7 @@ void View::projectingRay(int sx, int sy, vpPoint & start, Vector & dirn)
     viewport = glm::vec4(startx, starty, width, height);
 
     wrld = glm::unProject(win, getViewMtx(), getProjMtx(), viewport);
-    pnt = vpPoint(wrld.x, wrld.y, wrld.z);
+    pnt = cgp::Point(wrld.x, wrld.y, wrld.z);
     start = cop;
     dirn.diff(cop, pnt); dirn.normalize();
 /*
@@ -153,7 +146,7 @@ void View::projectingRay(int sx, int sy, vpPoint & start, Vector & dirn)
     GLdouble mvmatrix[16], projmatrix[16];
     GLint realy, realx;
     GLdouble wx, wy, wz;
-    vpPoint pnt;
+    cgp::Point pnt;
 
     // unproject screen point to derive world coordinates
     glGetIntegerv(GL_VIEWPORT, viewport);
@@ -162,13 +155,13 @@ void View::projectingRay(int sx, int sy, vpPoint & start, Vector & dirn)
     realy = viewport[3] - (GLint) sy - 1; realx = (GLint) sx;
 
     gluUnProject((GLdouble) realx, (GLdouble) realy, (GLdouble) 0.3f, mvmatrix, projmatrix, viewport, &wx, &wy, &wz);
-    pnt = vpPoint((float) wx, (float) wy, (float) wz);
+    pnt = cgp::Point((float) wx, (float) wy, (float) wz);
     start = cop;
     dirn.diff(cop, pnt); dirn.normalize();
 */
 }
 
-void View::projectingPoint(int sx, int sy, vpPoint & pnt)
+void View::projectingPoint(int sx, int sy, cgp::Point & pnt)
 {
     // opengl3.2 with glm
     glm::vec3 wrld, win;
@@ -181,7 +174,7 @@ void View::projectingPoint(int sx, int sy, vpPoint & pnt)
     viewport = glm::vec4(startx, starty, width, height);
 
     wrld = glm::unProject(win, getViewMtx(), getProjMtx(), viewport);
-    pnt = vpPoint(wrld.x, wrld.y, wrld.z);
+    pnt = cgp::Point(wrld.x, wrld.y, wrld.z);
 
 /*
     // pre opengl3.2
@@ -198,23 +191,23 @@ void View::projectingPoint(int sx, int sy, vpPoint & pnt)
     realy = viewport[3] - (GLint) sy - 1; realx = (GLint) sx;
     
     gluUnProject((GLdouble) realx, (GLdouble) realy, (GLdouble) 0.3f, mvmatrix, projmatrix, viewport, &wx, &wy, &wz);
-    pnt = vpPoint((float) wx, (float) wy, (float) wz);
+    pnt = cgp::Point((float) wx, (float) wy, (float) wz);
 */
 }
 
-void View::inscreenPoint(int sx, int sy, vpPoint & pnt)
+void View::inscreenPoint(int sx, int sy, cgp::Point & pnt)
 {
     // opengl3.2 with glm
     int realx, realy;
 
     // unproject screen point to derive world coordinates
     realy = height + 2.0f * starty - sy; realx = sx;
-    pnt = vpPoint(realx / width, realy / height, 0.0f); // FIX?
+    pnt = cgp::Point(realx / width, realy / height, 0.0f);
 }
 
-void View::projectOntoManip(vpPoint pick, vpPoint mpnt, Vector mdirn, vpPoint & mpick)
+void View::projectOntoManip(cgp::Point pick, cgp::Point mpnt, cgp::Vector mdirn, cgp::Point & mpick)
 {
-    Vector pdirn;
+    cgp::Vector pdirn;
     float t;
     
     pdirn.diff(mpnt, pick);
@@ -223,12 +216,12 @@ void View::projectOntoManip(vpPoint pick, vpPoint mpnt, Vector mdirn, vpPoint & 
     mdirn.pntplusvec(mpnt, &mpick);
 }
 
-void View::projectMove(int ox, int oy, int nx, int ny, vpPoint cp, Vector & del)
+void View::projectMove(int ox, int oy, int nx, int ny, cgp::Point cp, cgp::Vector & del)
 {
     glm::vec3 wrld, win;
     glm::vec4 viewport;
-    vpPoint npnt, opnt;
-    Vector vecs, vecw;
+    cgp::Point npnt, opnt;
+    cgp::Vector vecs, vecw;
     float dw, ds;
     int realx, realy;
 
@@ -239,13 +232,13 @@ void View::projectMove(int ox, int oy, int nx, int ny, vpPoint cp, Vector & del)
     realy = height + 2.0f * starty - ny; realx = nx;
     win = glm::vec3((float) realx, (float) realy, 0.5f);
     wrld = glm::unProject(win, getViewMtx(), getProjMtx(), viewport);
-    npnt = vpPoint(wrld.x, wrld.y, wrld.z);
+    npnt = cgp::Point(wrld.x, wrld.y, wrld.z);
 
     // unproject old point
     realy = height + 2.0f * starty - oy; realx = ox;
     win = glm::vec3((float) realx, (float) realy, 0.5f);
     wrld = glm::unProject(win, getViewMtx(), getProjMtx(), viewport);
-    opnt = vpPoint(wrld.x, wrld.y, wrld.z);
+    opnt = cgp::Point(wrld.x, wrld.y, wrld.z);
 
     del.diff(opnt, npnt); // direction yes, but scale incorrect
     vecs.diff(cop, opnt);
@@ -261,8 +254,8 @@ void View::projectMove(int ox, int oy, int nx, int ny, vpPoint cp, Vector & del)
     GLdouble mvmatrix[16], projmatrix[16];
     GLint realy, realx;
     GLdouble wx, wy, wz;
-    vpPoint npnt, opnt;
-    Vector vecs, vecw;
+    cgp::Point npnt, opnt;
+    cgp::Vector vecs, vecw;
     float dw, ds;
 
     // unproject screen point to derive world coordinates
@@ -274,12 +267,12 @@ void View::projectMove(int ox, int oy, int nx, int ny, vpPoint cp, Vector & del)
     // unproject new point
     realy = viewport[3] - (GLint) ny - 1; realx = (GLint) nx;
     gluUnProject((GLdouble) realx, (GLdouble) realy, (GLdouble) 0.3f, mvmatrix, projmatrix, viewport, &wx, &wy, &wz);
-    npnt = vpPoint((float) wx, (float) wy, (float) wz);
+    npnt = cgp::Point((float) wx, (float) wy, (float) wz);
 
     // unproject old point
     realy = viewport[3] - (GLint) oy - 1; realx = (GLint) ox;
     gluUnProject((GLdouble) realx, (GLdouble) realy, (GLdouble) 0.3f, mvmatrix, projmatrix, viewport, &wx, &wy, &wz);
-    opnt = vpPoint((float) wx, (float) wy, (float) wz);
+    opnt = cgp::Point((float) wx, (float) wy, (float) wz);
 
     del.diff(opnt, npnt); // direction yes, but scale incorrect
     vecs.diff(cop, opnt);
@@ -305,7 +298,7 @@ glm::mat4x4 View::getProjMtx()
     glm::mat4x4 projMx;
 
     // frustum
-    projMx = glm::frustum(-0.08, 0.08, -0.08, 0.08, 0.5, 150.0);
+    projMx = glm::frustum(-0.08, 0.08, -0.08, 0.08, 0.5, 250.0);
 
     return projMx;
 }
@@ -379,21 +372,6 @@ void View::apply()
     updateDir();
 }
 
-/*
-void View::drawPick(vpPoint p)
-{
-    float pickCol[] = { 1.0f, 0.0f, 0.0f, 1.0f };
-    
-    // assume view transformations already set up
-    std::vector<vpPoint> line;
-
-    line.push_back(p); line.push_back(p);
-    line[1].y += 0.1f;
-    // will need to be moved elsewhere to make use of constraint shape
-    // drawLine(line, 0.005f, 0.0001f, pickCol, false, false, false);
-}
-*/
-
 bool View::animate()
 {
     if(focalstep > 0)
@@ -419,12 +397,6 @@ bool View::spin()
         add_quats (lastquat, curquat, curquat);
         updateDir();
         focalstep--;
-
-        if(focalstep == 1)
-        {
-            time.stop();
-            cerr << "spin took " << time.peek() << "s" << endl;
-        }
         return true;
     }
     return false;

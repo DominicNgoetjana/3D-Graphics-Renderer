@@ -11,12 +11,13 @@
 #include <QMouseEvent>
 #include <QKeyEvent>
 #include <QPushButton>
+#include <QLabel>
 #include <list>
 #include <common/debug_vector.h>
 #include <common/debug_list.h>
 
 #include "view.h"
-#include "scene.h"
+#include "csg.h"
 #include "renderer.h"
 
 //! [0]
@@ -30,7 +31,10 @@ class GLWidget : public QGLWidget
 
 public:
 
+    /// constructor
     GLWidget(const QGLFormat& format, QWidget *parent = 0);
+
+    /// destructor
     ~GLWidget();
 
     QSize minimumSizeHint() const;
@@ -42,11 +46,11 @@ public:
     /// getter for renderer
     Renderer * getRenderer(){ return renderer; }
 
-    /// getter for scene geometry
+    /// getter for scene
     Scene * getScene(){ return &scene; }
 
-    /// getter for intersection shape
-    Mesh * getXSect(){ return &xsect; }
+    /// getter for scene
+    ffd * getDef(){ return &def; }
 
     /// setter for geometry updating
     void setGeometryUpdate(bool update){ updateGeometry = update; }
@@ -54,49 +58,58 @@ public:
     /// setter for drawing intersection mesh
     void setMeshVisible(bool vis){ meshVisible = vis; setGeometryUpdate(true); }
 
-    /// interesect mesh with scene
-    void intersect(){  scene.packCubesInMesh(&xsect); setMeshVisible(false); repaint(); }
+    /// setter for drawing intersection mesh
+    void setLatVisible(bool vis){ latVisible = vis; setGeometryUpdate(true); }
 
-    /// Respond to key press events
+    /// respond to key press events
     void keyPressEvent(QKeyEvent *event);
 
 signals:
+
+    /// signal that the OpenGL canvas should be repainted
     void signalRepaintAllGL();
-    
-public slots:
-    void animUpdate(); // animation step for change of focus
-    void rotateUpdate(); // animation step for rotating around terrain center
 
 protected:
+    /// Setup OpenGL state
     void initializeGL();
+
+    /// OpenGL draw call
     void paintGL();
+
+    /// Resize OpenGL canvas
     void resizeGL(int width, int height);
 
+    /// Handle mouse button press
     void mousePressEvent(QMouseEvent *event);
+
+    /// Handle mouse button release
     void mouseReleaseEvent(QMouseEvent *event);
+
+    /// Handle mouse movement
     void mouseMoveEvent(QMouseEvent *event);
+
+    /// Handle mouse wheel scrolling
     void wheelEvent(QWheelEvent * wheel);
 
 private:
 
     // scene control
-    Scene scene;                        ///< tesselation mesh
-    Mesh xsect;                         ///< intersection mesh
-    View view;
-    vector<ShapeDrawData> drawParams;
+    Scene scene;                        ///< scene represented as CSG tree
+    ffd def;                            ///< free-form deformation lattice
+    View view;                          ///< current viewpoint
+    vector<ShapeDrawData> drawParams;   ///< OpenGL drawing parameters
     bool updateGeometry;                ///< recreate render buffers on change
-    bool meshVisible;                   ///< render intersection mesh
+    bool meshVisible;                   ///< render csg geometry
+    bool latVisible;                    ///< render ffd control points
 
     // render variables
-    Renderer * renderer;
+    Renderer * renderer;                ///< OpenGL renderer
 
     // gui variables
-    bool viewing;
-    bool glewSetupDone;
+    bool viewing;                       ///< is the user adjusting the viewing direction?
+    bool glewSetupDone;                 ///< is OpenGL initialisation finished
 
-    QPoint lastPos;
-    QColor qtWhite;
-    QTimer * atimer, * rtimer; // timers to control different types of animation
+    QPoint lastPos;                     ///< previous mouse position in 2D
 };
 
 #endif

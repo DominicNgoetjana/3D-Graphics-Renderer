@@ -1,0 +1,28 @@
+digraph "tesselate/shape.h"
+{
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node21 [label="tesselate/shape.h",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black"];
+  Node21 -> Node22 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node22 [label="tesselate/renderer.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$renderer_8h_source.html"];
+  Node22 -> Node23 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node23 [label="tesselate/mesh.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$mesh_8h.html",tooltip="Data structure representing a triangle mesh in 3D space. "];
+  Node23 -> Node24 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node24 [label="tesselate/csg.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$csg_8h.html",tooltip="Constructive Solid Geometry binary tree, with internal nodes representing binary set operations and l..."];
+  Node24 -> Node25 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node25 [label="tesselate/glwidget.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$glwidget_8h_source.html"];
+  Node25 -> Node26 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node26 [label="tesselate/window.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$window_8h_source.html"];
+  Node24 -> Node27 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node27 [label="test/test_csg.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$test__csg_8h_source.html"];
+  Node24 -> Node28 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node28 [label="test/test_mc.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$test__mc_8h_source.html"];
+  Node23 -> Node29 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node29 [label="test/test_mesh.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$test__mesh_8h_source.html"];
+  Node22 -> Node30 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node30 [label="tesselate/ffd.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$ffd_8h.html",tooltip="Free-form Deformation to warp vertices of a mesh. "];
+  Node30 -> Node23 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node30 -> Node31 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node31 [label="test/test_ffd.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$test__ffd_8h_source.html"];
+  Node22 -> Node25 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

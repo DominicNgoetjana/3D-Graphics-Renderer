@@ -1,0 +1,22 @@
+digraph "tesselate/ffd.h"
+{
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node38 [label="tesselate/ffd.h",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black"];
+  Node38 -> Node39 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node39 [label="tesselate/mesh.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$mesh_8h.html",tooltip="Data structure representing a triangle mesh in 3D space. "];
+  Node39 -> Node40 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node40 [label="tesselate/csg.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$csg_8h.html",tooltip="Constructive Solid Geometry binary tree, with internal nodes representing binary set operations and l..."];
+  Node40 -> Node41 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node41 [label="tesselate/glwidget.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$glwidget_8h_source.html"];
+  Node41 -> Node42 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node42 [label="tesselate/window.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$window_8h_source.html"];
+  Node40 -> Node43 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node43 [label="test/test_csg.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$test__csg_8h_source.html"];
+  Node40 -> Node44 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node44 [label="test/test_mc.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$test__mc_8h_source.html"];
+  Node39 -> Node45 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node45 [label="test/test_mesh.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$test__mesh_8h_source.html"];
+  Node38 -> Node46 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node46 [label="test/test_ffd.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$test__ffd_8h_source.html"];
+}

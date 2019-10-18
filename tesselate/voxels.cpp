@@ -1,5 +1,5 @@
 //
-// voxels
+// Voxels
 //
 
 #include "voxels.h"
@@ -11,7 +11,10 @@
 
 using namespace std;
 
+//==========START BLOYD
+
 // source for tables Marching Cubes Example Program by Cory Bloyd (corysama@yahoo.com)
+// http://paulbourke.net/geometry/polygonise/marchingsource.cpp)
 // code is public domain
 // lists the positions, relative to bottom, front, left corner, of each of the 8 vertices of a cube
 static const int cubePos[8][3] =
@@ -53,7 +56,9 @@ int cubeEdgeFlags[256]=
  {4,5}, {5,6}, {6,7}, {7,4},
  {0,4}, {1,5}, {2,6}, {3,7}
  };*/
+//========== END BLOYD
 
+// intersection point for unit cube boolean voxels. Always half way along an edge.
 static const float edgePos[12][3] =
 {
     {0.5f, 0.0f, 0.0f}, {1.0f, 0.5f, 0.0f}, {0.5f, 1.0f, 0.0f}, {0.0f, 0.5f, 0.0f},
@@ -81,12 +86,14 @@ VoxelVolume::VoxelVolume()
     xdim = ydim = zdim = 0;
     xspan = 0;
     voxgrid = NULL;
+    setFrame(cgp::Point(0.0f, 0.0f, 0.0f), cgp::Vector(0.0f, 0.0f, 0.0f));
 }
 
-VoxelVolume::VoxelVolume(int xsize, int ysize, int zsize)
+VoxelVolume::VoxelVolume(int xsize, int ysize, int zsize, cgp::Point corner, cgp::Vector diag)
 {
     voxgrid = NULL;
     setDim(xsize, ysize, zsize);
+    setFrame(corner, diag);
 }
 
 VoxelVolume::~VoxelVolume()
@@ -97,7 +104,10 @@ VoxelVolume::~VoxelVolume()
 void VoxelVolume::clear()
 {
     if(voxgrid != NULL)
+    {
         delete [] voxgrid;
+        voxgrid = NULL;
+    }
 }
 
 void VoxelVolume::fill(bool setval)
@@ -111,12 +121,25 @@ void VoxelVolume::fill(bool setval)
     memset(voxgrid, fillval, memsize);
 }
 
+void VoxelVolume::calcCellDiag()
+{
+    if(xdim > 0 && ydim > 0 && zdim > 0)
+        cell = cgp::Vector(diagonal.i / (float) xdim, diagonal.j / (float) ydim, diagonal.k / (float) zdim);
+    else
+        cell = cgp::Vector(0.0f, 0.0f, 0.0f);
+}
+
 void VoxelVolume::getDim(int &dimx, int &dimy, int &dimz)
 {
     dimx = xdim; dimy = ydim; dimz = zdim;
 }
 
-void VoxelVolume::setDim(int &dimx, int &dimy, int &dimz)
+int VoxelVolume::getXSpan()
+{
+    return xspan;
+}
+
+void VoxelVolume::setDim(int dimx, int dimy, int dimz)
 {
     int memsize;
 
@@ -127,11 +150,27 @@ void VoxelVolume::setDim(int &dimx, int &dimy, int &dimz)
     intsize = (sizeof(int) * 8); // because size of an integer is supposedly platform dependent, although typically 32 bits
     // will address individual bits in x dimension, so must be divisible by integer size
     xspan = (int) ceil((float) xdim / (float) intsize);
+    cout << "xspan = " << xspan << endl;
     xdim = xspan * intsize;
 
     memsize = xspan * ydim * zdim;
     voxgrid = new int[memsize];
     fill(false);
+
+    calcCellDiag();
+}
+
+void VoxelVolume::getFrame(cgp::Point &corner, cgp::Vector &diag)
+{
+    corner = origin;
+    diag = diagonal;
+}
+
+void VoxelVolume::setFrame(cgp::Point corner, cgp::Vector diag)
+{
+    origin = corner;
+    diagonal = diag;
+    calcCellDiag();
 }
 
 bool VoxelVolume::set(int x, int y, int z, bool setval)
@@ -166,6 +205,20 @@ bool VoxelVolume::get(int x, int y, int z)
     }
 }
 
+cgp::Point VoxelVolume::getVoxelPos(int x, int y, int z)
+{
+    cgp::Point pnt;
+    cgp::Vector halfcell;
+    float px, py, pz;
+
+    px = (float) x / (float) (xdim-1);
+    py = (float) y / (float) (ydim-1);
+    pz = (float) z / (float) (zdim-1);
+
+    pnt = cgp::Point(origin.x + px * diagonal.i, origin.y + py * diagonal.j, origin.z + pz * diagonal.k); // convert from voxel space to world coordinates
+    return pnt;
+}
+
 int VoxelVolume::getMCVertIdx(int x, int y, int z)
 {
     bool cube[8];
@@ -175,7 +228,7 @@ int VoxelVolume::getMCVertIdx(int x, int y, int z)
     for(i = 0; i < 8; i++)
         cube[i] = get(x+cubePos[i][0], y+cubePos[i][1], z+cubePos[i][2]);
 
-    // construct bit index code, 1 for outside, 0 for inside???
+    // construct bit index code, 1 for outside, 0 for inside
     for(i = 0; i < 8; i++)
         if(!cube[i])
             idx |= 1<<i;
@@ -185,11 +238,10 @@ int VoxelVolume::getMCVertIdx(int x, int y, int z)
 int VoxelVolume::getMCEdgeIdx(int vcode)
 {
     return cubeEdgeFlags[vcode];
-
 }
 
-vpPoint VoxelVolume::getMCEdgeXsect(int ebit)
+cgp::Point VoxelVolume::getMCEdgeXsect(int ebit)
 {
-    vpPoint xsect = vpPoint(edgePos[ebit][0], edgePos[ebit][1], edgePos[ebit][2]);
+    cgp::Point xsect = cgp::Point(edgePos[ebit][0], edgePos[ebit][1], edgePos[ebit][2]);
     return xsect;
 }

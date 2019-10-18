@@ -44,6 +44,7 @@
 #include "window.h"
 #include "vecpnt.h"
 #include "common/str.h"
+#include <QMessageBox>
 
 #include <cmath>
 #include <string>
@@ -60,6 +61,10 @@ Window::Window()
     QWidget *mainWidget = new QWidget;
     QGridLayout *mainLayout = new QGridLayout;
 
+    cpi = cpj = cpk = 0; // initial selected control point
+    latdx = latdy = latdz = 3; // order of the ffd lattice in each dimension
+    sliderange = 40.0f; // determines bounds of how far cp can be shifted
+
     setCentralWidget(mainWidget);
     mainLayout->setColumnStretch(0, 0);
     mainLayout->setColumnStretch(1, 1);
@@ -73,7 +78,7 @@ Window::Window()
 
     perspectiveView = new GLWidget(glFormat);
 
-    getCamera().setForcedFocus(vpPoint(0.0f, 0.0f, 0.0f));
+    getCamera().setForcedFocus(cgp::Point(0.0f, 0.0f, 0.0f));
     getCamera().setViewScale(1.0f);
 
     // param panel
@@ -81,169 +86,157 @@ Window::Window()
     QVBoxLayout *paramLayout = new QVBoxLayout;
 
     // components on parameter panel
+    // check box for display of scene
+    checkModel = new QCheckBox(tr("Show Scene"));
+    checkModel->setChecked(false);
+    paramLayout->addWidget(checkModel);
 
-    // radius settings
-    QGroupBox *radGroup = new QGroupBox(tr("Wireframe Settings"));
-    QLabel *radSphereLabel = new QLabel(tr("Vertex Radius:"));
-    radSphereEdit = new QLineEdit;
-    radSphereEdit->setFixedWidth(75);
-    radSphereEdit->setValidator(new QDoubleValidator(0.02, 5.0, 2, radSphereEdit));
-    QLabel *radCylLabel = new QLabel(tr("Edge Radius:"));
-    radCylEdit = new QLineEdit;
-    radCylEdit->setFixedWidth(75);
-    radCylEdit->setValidator(new QDoubleValidator(0.02, 5.0, 2, radCylEdit));
+    // check box for display of ffd lattice
+    checkLat = new QCheckBox(tr("Show Lattice"));
+    checkLat->setChecked(true);
+    paramLayout->addWidget(checkLat);
 
-    // set initial radius values in panel
-    radSphereEdit->setText(QString::number(perspectiveView->getScene()->getSphereRad(), 'g', 2));
-    radCylEdit->setText(QString::number(perspectiveView->getScene()->getCylRad(), 'g', 2));
+    // control point index selection
+    QGroupBox *selGroup = new QGroupBox(tr("Control Point Selection"));
+    QGridLayout *selLayout = new QGridLayout;
 
-    QGridLayout *radLayout = new QGridLayout;
-    radLayout->addWidget(radSphereLabel, 0, 0);
-    radLayout->addWidget(radSphereEdit, 0, 1);
-    radLayout->addWidget(radCylLabel, 1, 0);
-    radLayout->addWidget(radCylEdit, 1, 1);
-    radGroup->setLayout(radLayout);
-    paramLayout->addWidget(radGroup);
+    QLabel *iLabel = new QLabel(tr("i:"));
+    iEdit = new QLineEdit;
+    iEdit->setFixedWidth(25);
+    iEdit->setValidator(new QIntValidator(0, latdx-1, iEdit));
+    QLabel *jLabel = new QLabel(tr("j:"));
+    jEdit = new QLineEdit;
+    jEdit->setFixedWidth(25);
+    jEdit->setValidator(new QIntValidator(0, latdy-1, jEdit));
+    QLabel *kLabel = new QLabel(tr("k:"));
+    kEdit = new QLineEdit;
+    kEdit->setFixedWidth(25);
+    kEdit->setValidator(new QIntValidator(0, latdz-1, kEdit));
 
-    // volume settings
-    QGroupBox *volGroup = new QGroupBox(tr("Volume Settings"));
-    QLabel *lenLabel = new QLabel(tr("Length:"));
-    lenEdit = new QLineEdit;
-    lenEdit->setFixedWidth(75);
-    lenEdit->setValidator(new QDoubleValidator(1.0, 50.0, 2, lenEdit));
-    QLabel *widthLabel = new QLabel(tr("Width:"));
-    widthEdit = new QLineEdit;
-    widthEdit->setFixedWidth(75);
-    widthEdit->setValidator(new QDoubleValidator(1.0, 50.0, 2, widthEdit));
-    QLabel *hghtLabel = new QLabel(tr("Height:"));
-    hghtEdit = new QLineEdit;
-    hghtEdit->setFixedWidth(75);
-    hghtEdit->setValidator(new QDoubleValidator(1.0, 50.0, 2, hghtEdit));
-    QLabel *sideLabel = new QLabel(tr("Element Side:"));
-    sideEdit = new QLineEdit;
-    sideEdit->setFixedWidth(75);
-    sideEdit->setValidator(new QDoubleValidator(0.2, 50.0, 2, sideEdit));
+    iEdit->setText(QString::number(cpi, 'i', 0));
+    jEdit->setText(QString::number(cpj, 'i', 0));
+    kEdit->setText(QString::number(cpk, 'i', 0));
 
-    // set initial volume values in panel
-    Vector diag = perspectiveView->getScene()->getBoundDiag();
-    lenEdit->setText(QString::number(diag.i, 'g', 2));
-    widthEdit->setText(QString::number(diag.k, 'g', 2));
-    hghtEdit->setText(QString::number(diag.j, 'g', 2));
-    sideEdit->setText(QString::number(perspectiveView->getScene()->getTessLength(), 'g', 2));
+    selLayout->addWidget(iLabel, 0, 0);
+    selLayout->addWidget(iEdit, 0, 1);
+    selLayout->addWidget(jLabel, 0, 2);
+    selLayout->addWidget(jEdit, 0, 3);
+    selLayout->addWidget(kLabel, 0, 4);
+    selLayout->addWidget(kEdit, 0, 5);
+    selGroup->setLayout(selLayout);
+    paramLayout->addWidget(selGroup);
 
-    QGridLayout *volLayout = new QGridLayout;
-    volLayout->addWidget(lenLabel, 0, 0);
-    volLayout->addWidget(lenEdit, 0, 1);
-    volLayout->addWidget(widthLabel, 1, 0);
-    volLayout->addWidget(widthEdit, 1, 1);
-    volLayout->addWidget(hghtLabel, 2, 0);
-    volLayout->addWidget(hghtEdit, 2, 1);
-    volLayout->addWidget(sideLabel, 3, 0);
-    volLayout->addWidget(sideEdit, 3, 1);
+    // control point positioning
+    QGroupBox *ffdGroup = new QGroupBox(tr("Control Point Position"));
+    QVBoxLayout *ffdLayout = new QVBoxLayout;
 
-    volGroup->setLayout(volLayout);
-    paramLayout->addWidget(volGroup);
+    // add cp sliders with correct initial positions
+    cgp::Point trs = perspectiveView->getDef()->getCP(cpi, cpj, cpk);
 
-    // mesh settings
-    QGroupBox *meshGroup = new QGroupBox(tr("Mesh Settings"));
-    QLabel *scfLabel = new QLabel(tr("Scale:"));
-    scfEdit = new QLineEdit;
-    scfEdit->setFixedWidth(75);
-    scfEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, scfEdit));
-    QLabel *trsLabel = new QLabel(tr("Translation:"));
-    txEdit = new QLineEdit;
-    txEdit->setFixedWidth(75);
-    txEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, txEdit));
-    tyEdit = new QLineEdit;
-    tyEdit->setFixedWidth(75);
-    tyEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, tyEdit));
-    tzEdit = new QLineEdit;
-    tzEdit->setFixedWidth(75);
-    tzEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, tzEdit));
-    QLabel *rotLabel = new QLabel(tr("Rotation:"));
-    rxEdit = new QLineEdit;
-    rxEdit->setFixedWidth(75);
-    rxEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, rxEdit));
-    ryEdit = new QLineEdit;
-    ryEdit->setFixedWidth(75);
-    ryEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, ryEdit));
-    rzEdit = new QLineEdit;
-    rzEdit->setFixedWidth(75);
-    rzEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, rzEdit));
+    // x translate
+    ffdLayout->addWidget(new QLabel(tr("Trs X")));
+    xtrslider = new QSlider(Qt::Horizontal);
+    xtrslider->setMinimum(int(std::ceil(-20.0f * sliderange)));
+    xtrslider->setMaximum(int(std::floor(20.0f * sliderange)));
+    xtrslider->setPageStep(200);
+    xtrslider->setSingleStep(1);
+    xtrslider->setTracking(true);
+    xtrslider->setValue(int(std::round(trs.x * sliderange)));
+    ffdLayout->addWidget(xtrslider);
 
-    // set initial mesh values in panel
-    scfEdit->setText(QString::number(perspectiveView->getXSect()->getScale(), 'g', 2));
-    Vector trs = perspectiveView->getXSect()->getTranslation();
-    txEdit->setText(QString::number(trs.i, 'g', 2));
-    tyEdit->setText(QString::number(trs.j, 'g', 2));
-    tzEdit->setText(QString::number(trs.k, 'g', 2));
-    float ax, ay, az;
-    perspectiveView->getXSect()->getRotations(ax, ay, az);
-    rxEdit->setText(QString::number(ax, 'g', 2));
-    ryEdit->setText(QString::number(ay, 'g', 2));
-    rzEdit->setText(QString::number(ay, 'g', 2));
+    // y translate
+    ffdLayout->addWidget(new QLabel(tr("Trs Y")));
+    ytrslider = new QSlider(Qt::Horizontal);
+    ytrslider->setMinimum(int(std::ceil(-20.0f * sliderange)));
+    ytrslider->setMaximum(int(std::floor(20.0f * sliderange)));
+    ytrslider->setPageStep(200);
+    ytrslider->setSingleStep(1);
+    ytrslider->setTracking(true);
+    ytrslider->setValue(int(std::round(trs.y * sliderange)));
+    ffdLayout->addWidget(ytrslider);
 
-    QGridLayout *meshLayout = new QGridLayout;
-    meshLayout->addWidget(scfLabel, 0, 0);
-    meshLayout->addWidget(scfEdit, 0, 1);
-    meshLayout->addWidget(trsLabel, 1, 0);
-    meshLayout->addWidget(txEdit, 1, 1);
-    meshLayout->addWidget(tyEdit, 1, 2);
-    meshLayout->addWidget(tzEdit, 1, 3);
-    meshLayout->addWidget(rotLabel, 2, 0);
-    meshLayout->addWidget(rxEdit, 2, 1);
-    meshLayout->addWidget(ryEdit, 2, 2);
-    meshLayout->addWidget(rzEdit, 2, 3);
+    // z translate
+    ffdLayout->addWidget(new QLabel(tr("Trs Z")));
+    ztrslider = new QSlider(Qt::Horizontal);
+    ztrslider->setMinimum(int(std::ceil(-20.0f * sliderange)));
+    ztrslider->setMaximum(int(std::floor(20.0f * sliderange)));
+    ztrslider->setPageStep(200);
+    ztrslider->setSingleStep(1);
+    ztrslider->setTracking(true);
+    ztrslider->setValue(int(std::round(trs.z * sliderange)));
+    ffdLayout->addWidget(ztrslider);
 
-    meshGroup->setLayout(meshLayout);
-    paramLayout->addWidget(meshGroup);
+    ffdGroup->setLayout(ffdLayout);
+    paramLayout->addWidget(ffdGroup);
 
-    // deformation settings
-    QGroupBox *defGroup = new QGroupBox(tr("Deformation Settings"));
-    QLabel *defLabel = new QLabel(tr("Magnitude:"));
-    defEdit = new QLineEdit;
-    defEdit->setFixedWidth(75);
-    defEdit->setValidator(new QDoubleValidator(0.0, 100.0, 2, defEdit));
+    // button for loading models
+    loadButton = new QPushButton(tr("Load STL"));
+    loadButton->setEnabled(true);
+    paramLayout->addWidget(loadButton);
 
-    // set initial deformation values in panel
-    AxialDef axdef;
-    float axval;
-    perspectiveView->getScene()->getDefParam(axdef, axval);
-    defEdit->setText(QString::number(axval, 'g', 2));
+    // button for loading voxel grids
+    loadGridButton = new QPushButton(tr("Load Voxel Grid"));
+    loadGridButton->setEnabled(true);
+    paramLayout->addWidget(loadGridButton);
 
-    QGridLayout *defLayout = new QGridLayout;
-    defLayout->addWidget(defLabel, 0, 0);
-    defLayout->addWidget(defEdit, 0, 1);
-
-    defGroup->setLayout(defLayout);
-    paramLayout->addWidget(defGroup);
-
-    // button for intersecting mesh with scene
-    QPushButton *xsectButton = new QPushButton(tr("1. Intersect"));
-    paramLayout->addWidget(xsectButton);
-
-    // button for generating a 3d print - not connected yet
-    QPushButton *voxButton = new QPushButton(tr("2. Voxelise"));
+    // button for voxelising csg tree
+    voxButton = new QPushButton(tr("Voxelize"));
+    //voxButton->setEnabled(true);
     paramLayout->addWidget(voxButton);
+
+    // button for marching cubes
+    marchButton = new QPushButton(tr("Extract Isosurface"));
+    marchButton->setEnabled(false);
+    paramLayout->addWidget(marchButton);
+
+    // button for smooth isosurface
+    smoothButton = new QPushButton(tr("Smooth"));
+    smoothButton->setEnabled(false);
+    paramLayout->addWidget(smoothButton);
+
+    // button for voxelising csg tree
+    defButton = new QPushButton(tr("Deform"));
+    defButton->setEnabled(false);
+    paramLayout->addWidget(defButton);
+
+    // button for shrinking mesh
+    shrinkButton = new QPushButton(tr("Shrink"));
+    shrinkButton->setEnabled(true);
+    paramLayout->addWidget(shrinkButton);
+
+    // button for demoing
+    demoButton = new QPushButton(tr("Demo"));
+    demoButton->setEnabled(true);
+    paramLayout->addWidget(demoButton);
+
+    // panel for demo label
+    demoLabel = new QLabel();
+    demoLabel->setText("");
+    QFont f( "Arial", 10, QFont::Light);
+    demoLabel->setFont(f);
+    demoLabel->setMargin(10);
+    demoLabel->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+    paramLayout->setSizeConstraint(QLayout::SetMinimumSize);
+    paramLayout->addWidget(demoLabel);
 
     // signal to slot connections
     connect(perspectiveView, SIGNAL(signalRepaintAllGL()), this, SLOT(repaintAllGL()));
-    connect(radSphereEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(radCylEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(lenEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(widthEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(hghtEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(sideEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(scfEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(txEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(tyEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(tzEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(rxEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(ryEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(rzEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(defEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
-    connect(xsectButton, &QPushButton::clicked, this, &Window::xsectPress);
+    connect(checkModel, SIGNAL(stateChanged(int)), this, SLOT(showModel(int)));
+    connect(checkLat, SIGNAL(stateChanged(int)), this, SLOT(showLat(int)));
+    connect(loadButton, &QPushButton::clicked, this, &Window::loadPress);
+    connect(loadGridButton, &QPushButton::clicked, this, &Window::loadGridPress);
     connect(voxButton, &QPushButton::clicked, this, &Window::voxPress);
+    connect(marchButton, &QPushButton::clicked, this, &Window::marchPress);
+    connect(smoothButton, &QPushButton::clicked, this, &Window::smoothPress);
+    connect(defButton, &QPushButton::clicked, this, &Window::defPress);
+    connect(shrinkButton, &QPushButton::clicked, this, &Window::shrinkPress);
+    connect(demoButton, &QPushButton::clicked, this, &Window::demoMode);
+    connect(iEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(jEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(kEdit, SIGNAL(editingFinished()), this, SLOT(lineEditChange()));
+    connect(xtrslider, SIGNAL(valueChanged(int)), this, SLOT(sliderChange(int)));
+    connect(ytrslider, SIGNAL(valueChanged(int)), this, SLOT(sliderChange(int)));
+    connect(ztrslider, SIGNAL(valueChanged(int)), this, SLOT(sliderChange(int)));
 
     paramPanel->setLayout(paramLayout);
     mainLayout->addWidget(perspectiveView, 0, 1);
@@ -256,8 +249,6 @@ Window::Window()
     setWindowTitle(tr("Tesselation Viewer"));
     mainWidget->setMouseTracking(true);
     setMouseTracking(true);
-
-    paramPanel->hide();
 }
 
 void Window::keyPressEvent(QKeyEvent *e)
@@ -281,46 +272,6 @@ void Window::repaintAllGL()
     perspectiveView->repaint();
 }
 
-void Window::newFile()
-{
-    // clear everything and reset
-    // this does not reset the volume parameters
-    perspectiveView->getXSect()->clear();
-    perspectiveView->setMeshVisible(false);
-    perspectiveView->setGeometryUpdate(true);
-}
-
-void Window::open()
-{
-    QFileDialog::Options options;
-    QString selectedFilter;
-    QImage cap;
-
-    QString fileName = QFileDialog::getOpenFileName(this,
-                                                    tr("Open Intersection File"),
-                                                    "~/",
-                                                    tr("STL Files (*.stl)"),
-                                                    &selectedFilter,
-                                                    options);
-    if (!fileName.isEmpty())
-    {
-        std::string infile = fileName.toUtf8().constData();
-
-        // use file extension to determine action
-        if(endsWith(infile, ".stl"))
-        {
-            perspectiveView->getXSect()->readSTL(infile);
-            perspectiveView->getXSect()->boxFit(10.0f);
-            perspectiveView->setMeshVisible(true);
-            repaintAllGL();
-        }
-        else
-        {
-            cerr << "Error Window::open: attempt to open unrecognized file format" << endl;
-        }
-    }
-}
-
 void Window::saveFile()
 {
     if(!tessfilename.isEmpty()) // save directly if we already have a file name
@@ -328,13 +279,18 @@ void Window::saveFile()
         std::string outfile = tessfilename.toUtf8().constData();
         if(!endsWith(outfile, ".stl"))
             outfile = outfile + ".stl";
-        // TO DO
-        // perspectiveView->saveScene(outfile);
+        if(!perspectiveView->getScene()->getMesh()->writeSTL(outfile)) // error message
+        {
+            QMessageBox msgBox;
+            msgBox.setText("Unable to save mesh to file");
+            msgBox.exec();
+        }
     }
     else
     {
         saveAs();
     }
+
 }
 
 void Window::saveAs()
@@ -352,24 +308,103 @@ void Window::saveAs()
         std::string outfile = tessfilename.toUtf8().constData();
         if(!endsWith(outfile, ".stl"))
             outfile = outfile + ".stl";
-        // TO DO
-        // perspectiveView->saveScene(outfile);
+        if(!perspectiveView->getScene()->getMesh()->writeSTL(outfile)) // error message
+        {
+            QMessageBox msgBox;
+            msgBox.setText("Unable to save mesh to file");
+            msgBox.exec();
+        }
     }
 }
 
-void Window::xsectPress()
+void Window::showModel(int show)
 {
-    if(!perspectiveView->getXSect()->empty())
-        perspectiveView->intersect();
-    else // error message
-        cerr << "Error Window::xsectPress: must load a shape to intersect against first." << endl;
-
+    perspectiveView->setMeshVisible(show == Qt::Checked);
+    repaintAllGL();
 }
 
-void Window::voxPress()
+void Window::showLat(int show)
 {
-    perspectiveView->getScene()->voxelise(0.05f);
+    perspectiveView->setLatVisible(show == Qt::Checked);
+    repaintAllGL();
+}
+
+void Window::sliderChange(int value)
+{
+    if(sender() == xtrslider)
+    {
+        cgp::Point trs = perspectiveView->getDef()->getCP(cpi, cpj, cpk);
+        trs.x = (float) value / sliderange;
+        perspectiveView->getDef()->setCP(cpi, cpj, cpk, trs);
+    }
+    else if(sender() == ytrslider)
+    {
+        cgp::Point trs = perspectiveView->getDef()->getCP(cpi, cpj, cpk);
+        trs.y = (float) value / sliderange;
+        perspectiveView->getDef()->setCP(cpi, cpj, cpk, trs);
+    }
+    else if(sender() == ztrslider)
+    {
+        cgp::Point trs = perspectiveView->getDef()->getCP(cpi, cpj, cpk);
+        trs.z = (float) value / sliderange;
+        perspectiveView->getDef()->setCP(cpi, cpj, cpk, trs);
+    }
     perspectiveView->setGeometryUpdate(true);
+    repaintAllGL();
+}
+void Window::lineEditChange()
+{
+    bool ok;
+    int val;
+
+    if(sender() == iEdit) // selected cp along x axis, 0..numdx-1
+    {
+        val = iEdit->text().toInt(&ok);
+        if(ok)
+        {
+            // change cp highlighting
+            perspectiveView->getDef()->deactivateAllCP();
+            cpi = val;
+            perspectiveView->getDef()->activateCP(cpi, cpj, cpk);
+        }
+    }
+    else if(sender() == jEdit) // selected cp along x axis, 0..numdx-1
+    {
+        val = jEdit->text().toInt(&ok);
+        if(ok)
+        {
+            // change cp highlighting
+            perspectiveView->getDef()->deactivateAllCP();
+            cpj = val;
+            perspectiveView->getDef()->activateCP(cpi, cpj, cpk);
+        }
+    }
+    else if(sender() == kEdit) // selected cp along x axis, 0..numdx-1
+    {
+        val = kEdit->text().toInt(&ok);
+        if(ok)
+        {
+            // change cp highlighting
+            perspectiveView->getDef()->deactivateAllCP();
+            cpk = val;
+            perspectiveView->getDef()->activateCP(cpi, cpj, cpk);
+        }
+    }
+
+    // adjust sliders to match new cp position
+    cgp::Point trs = perspectiveView->getDef()->getCP(cpi, cpj, cpk);
+    xtrslider->blockSignals(true); // block signals to prevent slider signalling a change in value
+    xtrslider->setValue(int(std::round(trs.x * sliderange)));
+    xtrslider->blockSignals(false);
+    ytrslider->blockSignals(true); // block signals to prevent slider signalling a change in value
+    ytrslider->setValue(int(std::round(trs.y * sliderange)));
+    ytrslider->blockSignals(false);
+    ztrslider->blockSignals(true); // block signals to prevent slider signalling a change in value
+    ztrslider->setValue(int(std::round(trs.z * sliderange)));
+    ztrslider->blockSignals(false);
+
+    perspectiveView->setGeometryUpdate(true);
+    repaintAllGL();
 }
 
 void Window::showParamOptions()
@@ -377,176 +412,112 @@ void Window::showParamOptions()
     paramPanel->setVisible(showParamAct->isChecked());
 }
 
-void Window::lineEditChange()
+void Window::voxPress()
 {
-    bool ok;
-    float val;
+    perspectiveView->getScene()->voxelise(0.1f);
+    perspectiveView->setGeometryUpdate(true);
+    marchButton->setEnabled(true); // only now can marching cubes be applied
+    repaintAllGL();
+}
 
-    if(sender() == radSphereEdit) // sphere radius
-    {
-        val = radSphereEdit->text().toFloat(&ok);
-        if(ok)
-        {
-            perspectiveView->getScene()->setSphereRad(val);
-            perspectiveView->setGeometryUpdate(true);
-        }
-    }
-    if(sender() == radCylEdit) // cylinder radius
-    {
-        val = radCylEdit->text().toFloat(&ok);
-        if(ok)
-        {
-            perspectiveView->getScene()->setCylRad(val);
-            perspectiveView->setGeometryUpdate(true);
-        }
-    }
-    if(sender() == lenEdit) // volume x-length
-    {
-        val = lenEdit->text().toFloat(&ok);
-        if(ok)
-        {
-            Vector diag = perspectiveView->getScene()->getBoundDiag();
-            diag.i = val;
-            perspectiveView->getScene()->setBoundDiag(diag);
-            perspectiveView->setGeometryUpdate(true);
-        }
-    }
-    if(sender() == widthEdit) // volume z-length
-    {
-        val = widthEdit->text().toFloat(&ok);
-        if(ok)
-        {
-            Vector diag = perspectiveView->getScene()->getBoundDiag();
-            diag.k = val;
-            perspectiveView->getScene()->setBoundDiag(diag);
-            perspectiveView->setGeometryUpdate(true);
-        }
-    }
-    if(sender() == hghtEdit) // volume y-length
-    {
-        val = hghtEdit->text().toFloat(&ok);
-        if(ok)
-        {
-            Vector diag = perspectiveView->getScene()->getBoundDiag();
-            diag.j = val;
-            perspectiveView->getScene()->setBoundDiag(diag);
-            perspectiveView->setGeometryUpdate(true);
-        }
-    }
-    if(sender() == sideEdit) // tesselation element side length
-    {
-        val = sideEdit->text().toFloat(&ok);
-        if(ok)
-        {
-            perspectiveView->getScene()->setTessLength(val);
-            perspectiveView->setGeometryUpdate(true);
-        }
-    }
-    if(sender() == scfEdit) // tesselation element side length
-    {
-        val = scfEdit->text().toFloat(&ok);
-        if(ok)
-        {
-            perspectiveView->getXSect()->setScale(val);
-            perspectiveView->setMeshVisible(true);
-        }
-    }
-    if(sender() == txEdit) // tesselation element side length
-    {
-        val = txEdit->text().toFloat(&ok);
-        if(ok)
-        {
-            Vector trs = perspectiveView->getXSect()->getTranslation();
-            trs.i = val;
-            perspectiveView->getXSect()->setTranslation(trs);
-            perspectiveView->setMeshVisible(true);
-        }
-    }
-    if(sender() == tyEdit) // tesselation element side length
-    {
-        val = tyEdit->text().toFloat(&ok);
-        if(ok)
-        {
-            Vector trs = perspectiveView->getXSect()->getTranslation();
-            trs.j = val;
-            perspectiveView->getXSect()->setTranslation(trs);
-            perspectiveView->setMeshVisible(true);
-        }
-    }
-    if(sender() == tzEdit) // tesselation element side length
-    {
-        val = tzEdit->text().toFloat(&ok);
-        if(ok)
-        {
-            Vector trs = perspectiveView->getXSect()->getTranslation();
-            trs.k = val;
-            perspectiveView->getXSect()->setTranslation(trs);
-            perspectiveView->setMeshVisible(true);
-        }
-    }
-    if(sender() == rxEdit) // tesselation element side length
-    {
-        val = rxEdit->text().toFloat(&ok);
-        if(ok)
-        {
-            float ax, ay, az;
-            perspectiveView->getXSect()->getRotations(ax, ay, az);
-            ax = val;
-            perspectiveView->getXSect()->setRotations(ax, ay, az);
-            perspectiveView->setMeshVisible(true);
-        }
-    }
-    if(sender() == ryEdit) // tesselation element side length
-    {
-        val = ryEdit->text().toFloat(&ok);
-        if(ok)
-        {
-            float ax, ay, az;
-            perspectiveView->getXSect()->getRotations(ax, ay, az);
-            ay = val;
-            perspectiveView->getXSect()->setRotations(ax, ay, az);
-            perspectiveView->setMeshVisible(true);
-        }
-    }
-    if(sender() == rzEdit) // tesselation element side length
-    {
-        val = rzEdit->text().toFloat(&ok);
-        if(ok)
-        {
-            float ax, ay, az;
-            perspectiveView->getXSect()->getRotations(ax, ay, az);
-            az = val;
-            perspectiveView->getXSect()->setRotations(ax, ay, az);
-            perspectiveView->setMeshVisible(true);
-        }
-    }
-    if(sender() == defEdit) // deformation axis value
-    {
-        val = defEdit->text().toFloat(&ok);
-        if(ok)
-        {
-            AxialDef axdef;
-            float axval;
-            perspectiveView->getScene()->getDefParam(axdef, axval);
-            perspectiveView->getScene()->setDefParam(axdef, val);
-            perspectiveView->setGeometryUpdate(true);
-        }
-    }
+void Window::marchPress()
+{
+    perspectiveView->getScene()->isoextract();
+    perspectiveView->setGeometryUpdate(true);
+    smoothButton->setEnabled(true); // only now can smoothing be applied
+    repaintAllGL();
+}
 
+void Window::smoothPress()
+{
+    perspectiveView->getScene()->smooth();
+    perspectiveView->setGeometryUpdate(true);
+    defButton->setEnabled(true); // only now can deformation be applied
+    repaintAllGL();
+}
+
+void Window::defPress()
+{
+    perspectiveView->getScene()->deform(perspectiveView->getDef());
+    perspectiveView->setGeometryUpdate(true);
+    repaintAllGL();
+}
+
+void Window::loadPress()
+{
+    QString filename = QFileDialog::getOpenFileName(this,
+                                                    tr("Open STL model"), "",
+                                                    tr("STL Models (*.stl *.STL);;All Files (*)"));
+    perspectiveView->getScene()->expensiveScene(filename.toStdString());
+    perspectiveView->setGeometryUpdate(true);
+    voxButton->setEnabled(true);
+    marchButton->setEnabled(false);
+    smoothButton->setEnabled(false);
+    defButton->setEnabled(false);
+    repaintAllGL();
+}
+
+void Window::loadGridPress()
+{
+    QString filename = QFileDialog::getOpenFileName(this,
+                                                    tr("Open voxel grid model"), "",
+                                                    tr("All files (*)"));
+    perspectiveView->getScene()->voxelMeshScene(filename.toStdString());
+    perspectiveView->setGeometryUpdate(true);
+    voxButton->setEnabled(true);
+    repaintAllGL();
+}
+
+void Window::shrinkPress()
+{
+    //perspectiveView->getScene()->pieceA1Scene(true);
+    perspectiveView->getScene()->testShrinkScene(false);
+    perspectiveView->setGeometryUpdate(true);
+    repaintAllGL();
+}
+
+void Window::demoMode()
+{
+    /// basic demo
+
+    // cube
+    loadModelDemo("meshes/triangle/10mm_test_cube.stl", "Basic: Load cube");
+    // sphere
+    loadModelDemo("meshes/triangle/sphere.stl", "Basic: Load sphere");
+    // hygrometer
+    loadModelDemo("meshes/triangle/hygrometer.stl", "Basic: Load hygrometer");
+    // barrel
+    loadModelDemo("meshes/triangle/Single_Barrel.stl", "Basic: Load barrel");
+    // bunny
+    loadModelDemo("meshes/triangle/bunny.stl", "Basic: Load bunny");
+}
+
+void Window::loadModelDemo(string filename, string txtDisplay)
+{
+    perspectiveView->getScene()->loadSTLScene(filename);
+    resetView();
+    demoLabel->setText(txtDisplay.c_str());
+    paramPanel->repaint();
+    sleep(3);
+}
+
+void Window::resetView()
+{
+    perspectiveView->setGeometryUpdate(true);
     repaintAllGL();
 }
 
 void Window::createActions()
 {
-    newAct = new QAction(tr("&New"), this);
-    newAct->setShortcuts(QKeySequence::New);
-    newAct->setStatusTip(tr("Create a new file"));
-    connect(newAct, SIGNAL(triggered()), this, SLOT(newFile()));
+//    newAct = new QAction(tr("&New"), this);
+//    newAct->setShortcuts(QKeySequence::New);
+//    newAct->setStatusTip(tr("Create a new file"));
+//    connect(newAct, SIGNAL(triggered()), this, SLOT(newFile()));
 
-    openAct = new QAction(tr("&Open"), this);
-    openAct->setShortcuts(QKeySequence::Open);
-    openAct->setStatusTip(tr("Open an existing file"));
-    connect(openAct, SIGNAL(triggered()), this, SLOT(open()));
+//    openAct = new QAction(tr("&Open"), this);
+//    openAct->setShortcuts(QKeySequence::Open);
+//    openAct->setStatusTip(tr("Open an existing file"));
+//    connect(openAct, SIGNAL(triggered()), this, SLOT(open()));
 
     saveAct = new QAction(tr("&Save"), this);
     saveAct->setShortcuts(QKeySequence::Save);
@@ -559,7 +530,7 @@ void Window::createActions()
 
     showParamAct = new QAction(tr("Show Parameters"), this);
     showParamAct->setCheckable(true);
-    showParamAct->setChecked(false);
+    showParamAct->setChecked(true);
     showParamAct->setStatusTip(tr("Hide/Show Parameters"));
     connect(showParamAct, SIGNAL(triggered()), this, SLOT(showParamOptions()));
 }
@@ -567,8 +538,8 @@ void Window::createActions()
 void Window::createMenus()
 {
     fileMenu = menuBar()->addMenu(tr("&File"));
-    fileMenu->addAction(newAct);
-    fileMenu->addAction(openAct);
+    // fileMenu->addAction(newAct);
+    // fileMenu->addAction(openAct);
     fileMenu->addAction(saveAct);
     fileMenu->addAction(saveAsAct);
     viewMenu = menuBar()->addMenu(tr("&View"));

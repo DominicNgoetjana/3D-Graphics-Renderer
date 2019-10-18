@@ -1,0 +1,7 @@
+digraph "Graphical Class Hierarchy"
+{
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="Triangle",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$structTriangle.html",tooltip="A triangle in 3D space, with 3 indices into a vertex list and an outward facing normal. "];
+}

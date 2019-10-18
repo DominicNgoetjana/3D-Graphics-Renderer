@@ -1,0 +1,22 @@
+digraph "tesselate/voxels.h"
+{
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  Node14 [label="tesselate/voxels.h",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black"];
+  Node14 -> Node15 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node15 [label="tesselate/mesh.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$mesh_8h.html",tooltip="Data structure representing a triangle mesh in 3D space. "];
+  Node15 -> Node16 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node16 [label="tesselate/csg.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$csg_8h.html",tooltip="Constructive Solid Geometry binary tree, with internal nodes representing binary set operations and l..."];
+  Node16 -> Node17 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node17 [label="tesselate/glwidget.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$glwidget_8h_source.html"];
+  Node17 -> Node18 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node18 [label="tesselate/window.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$window_8h_source.html"];
+  Node16 -> Node19 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node19 [label="test/test_csg.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$test__csg_8h_source.html"];
+  Node16 -> Node20 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node20 [label="test/test_mc.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$test__mc_8h_source.html"];
+  Node15 -> Node21 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node21 [label="test/test_mesh.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$test__mesh_8h_source.html"];
+  Node14 -> Node22 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node22 [label="test/test_voxels.h",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$test__voxels_8h_source.html"];
+}

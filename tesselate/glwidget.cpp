@@ -1,4 +1,4 @@
-#include <glew.h>
+#include <GL/glew.h>
 #include "glwidget.h"
 
 #include <math.h>
@@ -33,12 +33,6 @@ using namespace std;
 GLWidget::GLWidget(const QGLFormat& format, QWidget *parent)
     : QGLWidget(format, parent)
 {
-    qtWhite = QColor::fromCmykF(0.0, 0.0, 0.0, 0.0);
-    atimer = new QTimer(this);
-    connect(atimer, SIGNAL(timeout()), this, SLOT(animUpdate()));
-
-    rtimer = new QTimer(this);
-    connect(rtimer, SIGNAL(timeout()), this, SLOT(rotateUpdate()));
     renderer = new Renderer(NULL, "../tesselate/shaders/");
 
     viewing = false;
@@ -46,15 +40,24 @@ GLWidget::GLWidget(const QGLFormat& format, QWidget *parent)
     updateGeometry = true;
     meshVisible = false;
 
+    //scene.sampleScene();
+    //scene.intersectScene();
+    //scene.voxelScene("meshes/voxel/voxelisedgrid");
+    //scene.voxelMeshScene("meshes/voxel/voxelisedgrid");
+    scene.testShrinkScene();
+    //scene.pieceA1Scene(false);
+
+    // lattice matches default scene
+    def.setDim(3,3,3);
+    def.setFrame(cgp::Point(-10.0f, -10.0f, -10.0f), cgp::Vector(20.0f, 20.0f, 20.0f));
+    def.activateCP(0,0,0);
+
     setMouseTracking(true);
     setFocusPolicy(Qt::StrongFocus);
 }
 
 GLWidget::~GLWidget()
 {
-    delete atimer;
-    delete rtimer;
-
     if (renderer) delete renderer;
 }
 
@@ -84,6 +87,7 @@ void GLWidget::initializeGL()
     if ( !glFormat.sampleBuffers() )
         qWarning() << "Could not enable sample buffers";
 
+    QColor qtWhite = QColor::fromCmykF(0.0, 0.0, 0.0, 0.0);
     qglClearColor(qtWhite.light());
 
     int mu;
@@ -91,7 +95,7 @@ void GLWidget::initializeGL()
     cerr << "max texture units = " << mu << endl;
 
     // set up light
-    Vector dl = Vector(0.6f, 1.0f, 0.6f);
+    cgp::Vector dl = cgp::Vector(0.6f, 1.0f, 0.6f);
     dl.normalize();
 
     GLfloat pointLight[3] = { 0.5, 5.0, 7.0}; // side panel + BASIC lighting
@@ -115,9 +119,6 @@ void GLWidget::initializeGL()
 void GLWidget::paintGL()
 {
     ShapeDrawData sdd;
-    vpPoint mo;
-    glm::mat4 tfm, idt;
-    glm::vec3 trs, rot;
 
     glewExperimental = GL_TRUE;
     if(!glewSetupDone)
@@ -135,12 +136,17 @@ void GLWidget::paintGL()
     if(updateGeometry)
     {
         drawParams.clear();
-        if(scene.genGeometry(getView(), sdd))
-            drawParams.push_back(sdd);
 
         if(meshVisible)
         {
-            if(xsect.genGeometry(getView(), sdd))
+            if(scene.bindGeometry(getView(), sdd))
+                drawParams.push_back(sdd);
+        }
+        if(latVisible)
+        {
+            if(def.bindGeometry(getView(), sdd, true)) // highlighted cp
+                 drawParams.push_back(sdd);
+            if(def.bindGeometry(getView(), sdd, false)) // non-highlighted cp
                 drawParams.push_back(sdd);
         }
         updateGeometry = false;
@@ -164,20 +170,20 @@ void GLWidget::resizeGL(int width, int height)
 
 void GLWidget::keyPressEvent(QKeyEvent *event)
 {
-    if(event->key() == Qt::Key_A) // 'A' for animated spin around center point
+    if(event->key() == Qt::Key_A)
     {
-        // change focal point to center
-        // getTerrain()->setMidFocus();
-        // getView()->setForcedFocus(getTerrain()->getFocus());
-        getView()->startSpin();
-        rtimer->start(10);
+        // stub for key based input
+    }
+    if(event->key() == Qt::Key_S)
+    {
+        getScene()->sphereScene();
     }
 }
 
 void GLWidget::mousePressEvent(QMouseEvent *event)
 {
     float nx, ny;
-    vpPoint pnt;
+    cgp::Point pnt;
     
     int x = event->x(); int y = event->y();
     float W = (float) width(); float H = (float) height();
@@ -246,16 +252,4 @@ void GLWidget::wheelEvent(QWheelEvent * wheel)
         getView()->incrZoom(del);
         update();
     }
-}
-
-void GLWidget::animUpdate()
-{
-    if(getView()->animate())
-        update();
-}
-
-void GLWidget::rotateUpdate()
-{
-    if(getView()->spin())
-        update();
 }

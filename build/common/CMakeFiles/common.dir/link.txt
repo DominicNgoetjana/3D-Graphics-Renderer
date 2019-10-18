@@ -1,0 +1,2 @@
+/bin/ar qc libcommon.a  CMakeFiles/common.dir/stats.cpp.o CMakeFiles/common.dir/timer.cpp.o CMakeFiles/common.dir/source2cpp.cpp.o
+/bin/ranlib libcommon.a

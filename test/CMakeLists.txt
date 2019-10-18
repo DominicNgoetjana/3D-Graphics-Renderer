@@ -1,8 +1,10 @@
 set(TEST_SOURCES
     testutil.cpp
-    test_voxels.cpp
     test_mesh.cpp
-    test_scene.cpp
+    test_voxels.cpp
+    test_csg.cpp
+    test_ffd.cpp
+    test_mc.cpp
     tilertest.cpp
 )
 

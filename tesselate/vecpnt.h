@@ -1,17 +1,15 @@
-// file: vecpnt.h
-// author: James Gain
-// project: Interactive Sculpting (1997+)
-// notes: Basic vector and point arithmetic library. Inlined for efficiency.
+/**
+ * @file
+ *
+ * Basic vector and point arithmetic library. Inlined for efficiency. Also includes some simple geometry routines.
+*/
 // changes: included helpful geometry routines (2006)
 #ifndef _INC_VECPNT
 #define _INC_VECPNT
 
-#if _MSC_VER > 1000
-#pragma once
-#endif // _MSC_VER > 1000
-
 #include <math.h>
 #include <fstream>
+#include <iostream>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/serialization/base_object.hpp>
@@ -22,10 +20,13 @@
 
 #define pluszero 0.000001f
 #define minuszero -0.000001f
+#define pluszerod 0.1f
+#define minuszerod -0.1f
+
 #define PI 3.14159265
 #define PI2 6.2831853
-#define Eta 0.000001f
-#define Negeta - 0.000001f
+
+using namespace std;
 
 inline float sign(float n)
 {
@@ -35,17 +36,9 @@ inline float sign(float n)
         return -1.0f;
 }
 
-class vpPoint2D
-{
-public:
+namespace cgp {
 
-    float x, y;
-
-    inline vpPoint2D(){ x = 0.0f; y = 0.0f; }
-    inline vpPoint2D(float a, float b){ x = a; y = b; }
-};
-
-class vpPoint
+class Point
 {
 private:
     friend class boost::serialization::access;
@@ -61,22 +54,22 @@ public:
 
     float x, y, z;
 
-    /* Point: default constructor */
-    inline vpPoint()
+    /// default constructor, sets point to origin
+    inline Point()
     { x = 0.0;
       y = 0.0;
       z = 0.0;
     }
 
-    /* Point: constructor assigns (a,b,c) to (x,y,z) fields of point */
-    inline vpPoint(float a, float b, float c)
+    /// constructor assigns (a,b,c) to (x,y,z) fields of point
+    inline Point(float a, float b, float c)
     { x = a;
       y = b;
       z = c;
     }
 
-    /* operator=: copy assignment */
-    inline vpPoint & operator =(const vpPoint & from)
+    /// copy assignment
+    inline Point & operator =(const Point & from)
     {
       x = from.x;
       y = from.y;
@@ -84,8 +77,32 @@ public:
       return *this;
     }
 
-    /* dist: determine the distance between two points */
-    inline double dist(vpPoint p)
+    /// Component-wise addition of a point p to the current point
+    inline void add(Point& p)
+    { x += p.x;
+      y += p.y;
+      z += p.z;
+    }
+
+    /// Component-wise subtraction of a point p to the current point
+    inline void sub(Point& p)
+    { x -= p.x;
+      y -= p.y;
+      z -= p.z;
+    }
+
+    /// Print point
+    string printPoint()
+    {
+        return  "(" + to_string(x) + ", " + to_string(y) + ", " + to_string(z) + ")";
+    }
+
+    /**
+     * Determine the distance between two points
+     * @param p distance from this point to the current one
+     * @return euclidean distance
+     */
+    inline double dist(Point p)
     { float dx, dy, dz;
 
       dx = (p.x - x) * (p.x - x);
@@ -94,20 +111,21 @@ public:
       return sqrt(dx + dy + dz);
     }
 
-    inline void affinecombine(float c1, vpPoint& p1, float c2, vpPoint& p2)
+    /**
+     * Weighted affine combination of two points
+     * @param c1        weight assigned to first point
+     * @param p1        first point in affine combination
+     * @param c2        weight assigned to second point
+     * @param p2        second point in affine combination
+     */
+    inline void affinecombine(float c1, Point& p1, float c2, Point& p2)
     { x = c1 * p1.x + c2 * p2.x;
       y = c1 * p1.y + c2 * p2.y;
       z = c1 * p1.z + c2 * p2.z;
     }
 
-    inline void raffinecombine(float c1, vpPoint * p1, float c2, vpPoint * p2)
-    { x = c1 * p1->x + c2 * p2->x;
-      y = c1 * p1->y + c2 * p2->y;
-      z = c1 * p1->z + c2 * p2->z;
-    }
-
-    /* ==: test the equality of two points within a given tolerance */
-    inline bool operator == (vpPoint p)
+    /// Test the equality of two points within a given tolerance
+    inline bool operator == (Point p)
     { float dx, dy, dz;
       dx = x - p.x;
       dy = y - p.y;
@@ -134,13 +152,14 @@ public:
 
     float i, j, k;
 
-    /* Vector: default constructor */
+    /// Default constructor
     inline Vector()
     { i = 0.0;
       j = 0.0;
       k = 0.0;
     }
 
+    /// copy assignment
     Vector& operator=(const Vector &v)
     {
         i = v.i;
@@ -151,14 +170,18 @@ public:
     }
 
 
-    /* Vector: constructor assigns (a,b,c) to (i,j,k) fields of vector */
+    /// Constructor assigns (a,b,c) to (i,j,k) fields of vector
     inline Vector(float a, float b, float c)
     { i = a;
       j = b;
       k = c;
     }
 
-    /* angle: find the angle (in radians) between two vectors */
+    /**
+     * Find the angle (in radians) between two vectors
+     * @param b vector forming an angle with the current vector
+     * @return  angle in radians
+     */
     inline float angle(Vector b)
     { Vector a;
 
@@ -168,7 +191,7 @@ public:
       return (float) acos(a.dot(b));
     }
 
-    /* length: return the euclidian length of a vector */
+    /// Return the euclidian length of a vector
     inline float length()
     { float len;
 
@@ -177,6 +200,7 @@ public:
       return len;
     }
 
+    /// Return the square of the length of a vector. Avoids costly square root computation
     inline float sqrdlength()
     { float len;
 
@@ -186,11 +210,46 @@ public:
       return len;
     }
 
-    /* normalize: transform vector to unit length */
+    /// snap float
+    inline void snapVector()
+    {
+        float diff;
+
+        ///< snap i
+        diff = abs(0-abs(i));
+        //cerr << "snap i: " << diff << endl;
+        if (diff < pluszerod) i = 0; else {
+            if (i > 0) i = 1; else i = -1;
+        }
+
+        ///< snap j
+        diff = abs(0-abs(j));
+        if (diff < pluszerod) j = 0; else {
+            if (j > 0) j = 1; else j = -1;
+        }
+
+        ///< snap k
+        diff = abs(0-abs(k));
+        if (diff < pluszerod) k = 0; else {
+            if (k > 0) k = 1; else k = -1;
+        }
+    }
+
+    inline void specificSnap()
+    {
+        //cerr << "snapping " << printVec() << endl;
+        if (i > 0) i = 1; else if (i < 0) i = -1;
+        if (j > 0) j = 1; else if (j < 0) j = -1;
+        if (k > 0) k = 1; else if (k < 0) k = -1;
+        //return vec;
+    }
+
+    /// Transform vector to unit length
     inline void normalize()
     {
         float len;
         len = (float) sqrt(i*i + j*j + k*k);
+
         if(len > 0.0f)
             len = 1.0f / len;
         i *= len;
@@ -198,26 +257,14 @@ public:
         k *= len;
     }
 
-    inline float lnormalize()
-    {
-        float len;
-        len = (float) sqrt(i*i + j*j + k*k);
-        if(len > 0.0f)
-            len = 1.0f / len;
-        i *= len;
-        j *= len;
-        k *= len;
-        return len;
-    }
-
-    /* vec_mult: scale the vector by a scalar factor c */
+    /// Scale the vector by a scalar factor c
     inline void mult (float c)
     { i = i * c;
       j = j * c;
       k = k * c;
     }
 
-    /* mult: component-wise multiplication with another vector v */
+    /// Component-wise multiplication with another vector v
     inline void mult (Vector &v)
     {
         i *= v.i;
@@ -225,31 +272,21 @@ public:
         k *= v.k;
     }
 
-    /* div: the vector result of dividing vector a by vector b */
+    /// The vector result of dividing vector a by vector b
     inline void div(Vector& a, Vector& b)
     { i = a.i / b.i;
       j = a.j / b.j;
       k = a.k / b.k;
     }
 
-    /* pntconvert: convert a point p into a vector */
-    inline void pntconvert(vpPoint& p)
+    /// Convert a point p into a vector
+    inline void pntconvert(Point& p)
     { i = p.x;
       j = p.y;
       k = p.z;
     }
 
-    /*
-    inline Vector& operator=(Vector& v)
-    {
-       i = v.i;
-       j = v.j;
-       k = v.k;
-       return *this;
-    }
-    */
-
-    /* ==: return true if two vectors are identical within a tolerance */
+    /// Return true if two vectors are identical within a tolerance
     inline int operator ==(Vector v)
     { double di, dj, dk;
 
@@ -257,60 +294,59 @@ public:
       dj = j - v.j;
       dk = k - v.k;
 
-      return ((di < pluszero) && (di > minuszero) && (dj < pluszero) && (dj > minuszero)
-               && (dk < pluszero) && (dk > minuszero));
+      return ((di < pluszerod) && (di > minuszerod) && (dj < pluszerod) && (dj > minuszerod)
+               && (dk < pluszerod) && (dk > minuszerod));
     }
 
-    /* diff: difference of points: create a vector from point p to point q */
-    inline void diff(vpPoint p, vpPoint q)
+    /// Difference of points: create a vector from point p to point q
+    inline void diff(Point p, Point q)
     { i = (q.x - p.x);
       j = (q.y - p.y);
       k = (q.z - p.z);
     }
 
 
-    /* add: component-wise addition of a vector v to the current vector */
+    /// Component-wise addition of a vector v to the current vector
     inline void add(Vector& v)
     { i += v.i;
       j += v.j;
       k += v.k;
     }
 
-    /* add: component-wise subtraction of a vector v fromthe current vector */
+    /// Component-wise subtraction of a vector v fromthe current vector
     inline void sub(Vector& v)
     { i -= v.i;
       j -= v.j;
       k -= v.k;
     }
 
-    /* cross: generate the cross product of two vectors */
+    /// Generate the cross product of two vectors
     inline void cross(Vector& x, Vector& y)
     { i = (x.j * y.k) - (x.k * y.j);
       j = (x.k * y.i) - (x.i * y.k);
       k = (x.i * y.j) - (x.j * y.i);
     }
 
-    /* dot product: generate the dot product of two vectors */
+    /// Generate the dot product of two vectors
     inline float dot(Vector& v)
     { return ((i * v.i) + (j * v.j) + (k * v.k));
     }
 
-    /* pntplusvec: find the point at the head of a vector which
-                    is placed with its tail at p */
-    inline void pntplusvec(vpPoint& p, vpPoint * r)
+    /// Find the point at the head of a vector which is placed with its tail at p
+    inline void pntplusvec(Point& p, Point * r)
     { r->x = p.x + i;
       r->y = p.y + j;
       r->z = p.z + k;
     }
 
-    /* affinecombine: create an affine combination of two vectors v1 and v2, weighted by c1 and c2 */
+    /// Create an affine combination of two vectors v1 and v2, weighted by c1 and c2
     inline void affinecombine(float c1, Vector &v1, float c2, Vector &v2)
     { i = c1 * v1.i + c2 * v2.i;
       j = c1 * v1.j + c2 * v2.j;
       k = c1 * v1.k + c2 * v2.k;
     }
 
-    /* interp: interpolate between vectors <s> and <e> using linear parameter <t> */
+    /// Interpolate between vectors s and e using linear parameter t
     inline void interp(Vector s, Vector e, float t)
     {
         i = (1.0f - t)*s.i + t*e.i;
@@ -318,7 +354,7 @@ public:
         k = (1.0f - t)*s.k + t*e.k;
     }
 
-    /* rotate: turn the vector in the x-y plane by an angle <a> in radians */
+    /// Turn the vector in the x-y plane by an angle a in radians
     inline void rotate(float a)
     {
         float ni, nj, ca, sa;
@@ -329,132 +365,35 @@ public:
         i = ni; j = nj;
     }
 
-    inline void rotateInXZ(float a)
+    string printVec()
     {
-        float ni, nk, ca, sa;
-
-        ca = cos(a); sa = sin(a);
-        ni = i * ca - k * sa;
-        nk = k * ca + i * sa;
-        i = ni; k = nk;
+        return  "(" + to_string(i) + ", " + to_string(j) + ", " + to_string(k) + ")";
     }
 };
 
-class Plane
-{ public:
-    float d;    // plane offse
-    Vector n;   // plane normal
 
-    Plane(){ d = 0.0f; n = Vector(0.0f, 0.0f, 0.0f);}
-
-    // formPlane: create a plane passing through <pnt> with normal <norm>
-    void formPlane(vpPoint pnt, Vector norm);
-
-    // formPlane:   find the plane in which the triangle <tri> is embedded
-    //              Return <true> if the triangle vertices are not co-linear, <false> otherwise
-    bool formPlane(vpPoint * tri);
-
-    // rayPlaneIntersect:   find the parametric intersection point <tval> of a ray represented
-    //                      by a <start> position and vector <dirn> with a plane.
-    //                      Return <false> if there is no intersection, <true> otherwise.
-    bool rayPlaneIntersect(vpPoint start, Vector dirn, float & tval);
-
-    // rayPlaneIntersect:   find the point of intersection <intersect> of a ray represented
-    //                      by a <start> position and vector <dirn> with a plane.
-    //                      Return <false> if there is no intersection, <true> otherwise.
-    bool rayPlaneIntersect(vpPoint start, Vector dirn, vpPoint & intersect);
-
-    // side:    determine on which side of the plane a point <pnt> lies. Return <true> if in the
-    //          direction of the normal, <false> otherwise.
-    bool side(vpPoint pnt);
-
-    // dist: calculate and return the distance from the point to the plane
-    float dist(vpPoint pnt);
-
-    // height: project the point <pnt> vertically onto the plane, returning the y-value of the intercep
-    float height(vpPoint pnt);
-
-    // projectPnt: project <pnt> to the closest point on the plane as <proj>
-    void projectPnt(vpPoint pnt, vpPoint * proj);
-
-    // drawPlane:   render the plane. Assumes OpenGL viewing state is already se
-    //              front of plane is rendered in blue and back in green.
-    // void drawPlane();
-};
-
-// univariate 1-dimensional Bezier curve
-class Bezier
-{
-private:
-
-    float h[4];
-
-public:
-
-    Bezier(){ for(int i = 0; i < 4; i++) h[i] = 0.0f; }
-
-    Bezier(float p1, float p2, float p3, float p4)
-    {
-        h[0] = p1; h[1] = p2; h[2] = p3; h[3] = p4;
-    }
-
-    // eval: evaluate the Bezier curve at parameter value <t> in [0,1]
-    inline float eval(float t)
-    {
-        float s, s2, s3, t2, t3;
-
-        s = 1.0f - t; s2 = s*s; s3 = s2*s;
-        t2 = t*t; t3 = t*t2;
-
-        return h[0]*s3 + 3.0f*h[1]*t*s2 + 3.0f*h[2]*t2*s + h[3]*t3;
-    }
-};
-
-// optimization structure for repeated ray box tests
-class Ray
-{
-public:
-
-    vpPoint origin;
-    Vector direction;
-    Vector inv_direction;
-    int sign[3];
-
-    Ray()
-    {
-        origin = vpPoint(0.0f, 0.0f, 0.0f); direction = Vector(0.0f, 0.0f, 0.0f);
-        inv_direction = Vector(0.0f, 0.0f, 0.0f); sign[0] = 0; sign[1] = 0; sign[2] = 0;
-    }
-
-    Ray(vpPoint &o, Vector &d)
-    {
-        origin = o;
-        direction = d;
-        inv_direction = Vector(1/d.i, 1/d.j, 1/d.k);
-        sign[0] = (inv_direction.i < 0);
-        sign[1] = (inv_direction.j < 0);
-        sign[2] = (inv_direction.k < 0);
-    }
-};
-
+/**
+ * Bounding box in 3D space. Useful for accelerating geometric operations such as intersection.
+ */
 class BoundBox
 {
 
 public:
 
-    vpPoint min, max;
+    Point min; ///< minimal vertex (bottom, left, front cornder of bounding box)
+    Point max; ///< maximal vertex (top, right, back corner of bounding box)
 
     BoundBox(){ reset(); }
 
     /// Initialize bounding box to its default settting
     inline void reset()
     {
-        min = vpPoint(HUGE_VALF, HUGE_VALF, HUGE_VALF);
-        max = vpPoint(-HUGE_VALF, -HUGE_VALF, -HUGE_VALF);
+        min = Point(HUGE_VALF, HUGE_VALF, HUGE_VALF);
+        max = Point(-HUGE_VALF, -HUGE_VALF, -HUGE_VALF);
     }
 
     /// Compare point against current bounding box and expand as required
-    inline void includePnt(vpPoint pnt)
+    inline void includePnt(Point pnt)
     {
         if(pnt.x < min.x)
             min.x = pnt.x;
@@ -491,10 +430,10 @@ public:
     /// Return true if the bounding box is at default initial values
     inline bool empty()
     {
-        vpPoint absmin, absmax;
+        Point absmin, absmax;
 
-        absmax = vpPoint(HUGE_VALF, HUGE_VALF, HUGE_VALF);
-        absmin = vpPoint(-HUGE_VALF, -HUGE_VALF, -HUGE_VALF);
+        absmax = Point(HUGE_VALF, HUGE_VALF, HUGE_VALF);
+        absmin = Point(-HUGE_VALF, -HUGE_VALF, -HUGE_VALF);
         return (min == absmax && max == absmin);
         // (min.x ==  && min.y == 0.0f && min.z == farextent && max.x == -1.0f*farextent && max.y == 0.0f && max.z == -1.0f*farextent);
     }
@@ -508,6 +447,7 @@ public:
     }
 };
 
+}
 
 ////
 //// USEFUL GEOMETRY ROUTINES
@@ -516,51 +456,8 @@ public:
 // rayPointDist:   Find the shortest distance from a point <query> to a line segment, represented by an origin <start>
 //                  and direction <dirn>. Return the shortest distance from the line segment to the point as <dist> and
 //                  the parameter value on the line segment of this intersection as <tval>.
-void rayPointDist(vpPoint start, Vector dirn, vpPoint query, float &tval, float &dist);
+void rayPointDist(cgp::Point start, cgp::Vector dirn, cgp::Point query, float &tval, float &dist);
 
 // clamp: ensure that parameter <t> falls in [0,1]
 void clamp(float & t);
-
-////
-//// USEFUL PORTABILITY ROUTINES
-////
-
-/*
-// endianSwap: swap endian for short integer
-inline unsigned short endianSwap(unsigned short x)
-{
-    unsigned short y;
-    y = (x>>8) |
-        (x<<8);
-    return y;
-}*/
-
-// endianSwap: swap endian for integer
-inline unsigned int endianSwapi(unsigned int x)
-{
-    unsigned int y;
-    y = (x>>24) |
-        ((x<<8) & 0x00FF0000) |
-        ((x>>8) & 0x0000FF00) |
-        (x<<24);
-    return y;
-}
-
-// endianSwap: swap endian for floa
-inline float endianSwapf( float f )
-{
-    union
-    {
-        float f;
-        unsigned char b[4];
-    } dat1, dat2;
-
-    dat1.f = f;
-    dat2.b[0] = dat1.b[3];
-    dat2.b[1] = dat1.b[2];
-    dat2.b[2] = dat1.b[1];
-    dat2.b[3] = dat1.b[0];
-    return dat2.f;
-}
-
 #endif

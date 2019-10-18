@@ -1,4 +1,4 @@
-# Install script for directory: /Volumes/1Tb Macintosh HD/Users/Jed/Desktop/PROGRAMMING/uts
+# Install script for directory: /home/dlx/Desktop/cgp3-soln
 
 # Set the install prefix
 IF(NOT DEFINED CMAKE_INSTALL_PREFIX)

@@ -1,0 +1,9 @@
+digraph "Graphical Class Hierarchy"
+{
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node0 [label="detail::AssertionTraitsEqual\l\< std::array\< T, N \> \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classdetail_1_1AssertionTraitsEqual_3_01std_1_1array_3_01T_00_01N_01_4_01_4.html"];
+  Node0 -> Node1 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 [label="CppUnit::assertion\l_traits\< std::array\l\< T, N \> \>",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$classCppUnit_1_1assertion__traits_3_01std_1_1array_3_01T_00_01N_01_4_01_4.html"];
+}

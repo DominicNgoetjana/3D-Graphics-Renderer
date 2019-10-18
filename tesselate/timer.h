@@ -1,33 +1,39 @@
 #ifndef TimerC
 #define TimerC
-/* file: timer.h
-   author: (c) James Gain, 2006
-   project: ScapeSketch - sketch-based design of procedural landscapes
-   notes: fairly accurate timing routines
-   changes:
+/**
+ * @file
+ *
+ * Fairly accurate timing routines.
 */
-
-//#include <Carbon/Carbon.h>
 
 #include <sys/time.h>
 
+/**
+ * Timer with millisecond accuracy based on gettimeofday calls
+ */
 class Timer
 {
 
 private:
-    struct timeval tbegin, tend;
-    struct timezone zone;
+    struct timeval tbegin;  ///< starting time in unix timeofday format
+    struct timeval tend;    ///< stopping time in unix timeofday format
+    struct timezone zone;   ///< time zone required for gettimeofday
 
 public:
 
-    // start: shell to call timeofday with start
+    /// Start timing
     void start();
 
-    // stop: shell to call timeofday with stop
+    /**
+     * Stop timing
+     * @pre Expects a previous call to start for this timer
+     */
     void stop();
 
-    // peek:    get the current elapsed time between begin and end
-    // return:      begin-end
+    /**
+     * Get the elapsed time in seconds between calls to @a start and @a stop
+     * @returns elapsed time in seconds
+     */
     float peek();
 };
 
