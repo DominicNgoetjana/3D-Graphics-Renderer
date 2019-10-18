@@ -60,3 +60,26 @@ The executable is ./tesselate/tessviewer
 GUI
 ---
 Once a model has been loaded, it can be rotated by holding down the right mouse button and moving the cursor. Zooming is with the mouse wheel. Some sample meshes can be found in ./meshes
+
+========================================================================================================================================
+
+=========================
+COMPILATION and EXECUTION
+=========================
+1. To build for the first time, execute "./buildcgp.sh"
+2. To compile and run, execute "./runcgp.sh compile"
+3. To run without compiling, execute "./runcgp.sh"
+
+
+=========================
+SCENE CHANGE
+=========================
+To change to a particular scene in the code:
+1. Open tesselate/glwidget.cpp
+2. Navigate to the GLWidget(...) constructor
+3. Comment out the current scene, and then set/type the desired scene
+
+To change the scene loaded via a functionality button:
+1. Open tesselate/window.cpp
+2. Navigate to respective '..press' method of respective button 
+3. Comment out/edit the curent "perspectiveView->getScene()->[desired scene here]" line
